@@ -885,7 +885,7 @@
     catch { mongoReady=false; setNavDot("mongo-dot","mongo-lbl",false,"MongoDB 미연결"); }
     document.querySelectorAll("[data-mongo-action]").forEach(b=>{b.disabled=!mongoReady;});
     renderNotes(mongoReady
-      ? ["서비스가 정상 연결되었습니다.","☰ 메뉴에서 분석을 선택해 실행하세요.","Mongo CRUD 버튼이 활성화되었습니다."]
+      ? ["서비스가 정상 연결되었습니다.","메뉴에서 분석을 선택해 실행하세요.","Mongo CRUD 버튼이 활성화되었습니다."]
       : ["MongoDB가 연결되지 않아 CRUD 버튼은 비활성화됩니다.",`Airflow UI: ${AIRFLOW_URL}`]);
   };
   checkServices();
