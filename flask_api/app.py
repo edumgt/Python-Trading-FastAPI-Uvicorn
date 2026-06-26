@@ -57,6 +57,39 @@ def create_app():
         data, status = _call(webapp.StockForecastReq, webapp.stock_forecast, payload=request.get_json(silent=True))
         return jsonify(data), status
 
+    @app.get("/api/webapp/stock-search")
+    def stock_search():
+        import time as _time
+        q = request.args.get("q", "").strip().lower()
+        if not q:
+            return jsonify([])
+        cache = getattr(app, "_stock_cache", None)
+        if cache is None or _time.time() - cache["ts"] > 1800:
+            try:
+                from trading.naver_crawler import get_market_stocks as _gms
+                kospi  = _gms("kospi",  pages=3)
+                kosdaq = _gms("kosdaq", pages=3)
+                import pandas as _pd
+                combined = _pd.concat([kospi, kosdaq], ignore_index=True)
+                app._stock_cache = {
+                    "ts": _time.time(),
+                    "items": [
+                        {"ticker": str(r.get("Ticker", "") or r.get("ticker", "")),
+                         "name":   str(r.get("Name",   "") or r.get("name",   "")),
+                         "market": str(r.get("Market", "") or r.get("market", ""))}
+                        for _, r in combined.iterrows()
+                        if r.get("Ticker") or r.get("ticker")
+                    ],
+                }
+            except Exception:
+                app._stock_cache = {"ts": _time.time(), "items": []}
+        items = app._stock_cache["items"]
+        results = [
+            it for it in items
+            if q in it["ticker"].lower() or q in it["name"].lower()
+        ]
+        return jsonify(results[:15])
+
     @app.get("/api/mongo/health")
     def mongo_health():
         try:

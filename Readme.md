@@ -402,17 +402,7 @@ trading/
   webapp_analytics.py
 ```
 
-## Screenshots
 
-| 화면 | 설명 |
-|---|---|
-| ![메인 홈](docs/screenshots/01_main_home.png) | 초기 로드 상태 — 헤더, 상태 배지, 입력 패널 |
-| ![ML 결과](docs/screenshots/06_ml_result.png) | ML 방향 예측 — RandomForest BUY 시그널 |
-| ![DL 결과](docs/screenshots/07_dl_result.png) | DL 방향 예측 — MLP BUY 시그널 |
-| ![Forecast](docs/screenshots/08_cluster_result.png) | 내일 주가 리포트 — 예상 밴드·시나리오 |
-| ![모바일](docs/screenshots/10_mobile_view.png) | 모바일 뷰 (390px) |
-
-전체 스크린샷 목록: [docs/screenshots/](docs/screenshots/)
 
 ## Notes
 

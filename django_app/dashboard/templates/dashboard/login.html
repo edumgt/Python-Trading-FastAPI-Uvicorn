@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 · AlphaStation</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg:     #f0f3fa;
+      --surface:#ffffff;
+      --ln:     #e0e3eb;
+      --ln2:    #d1d4dc;
+      --tx:     #131722;
+      --tx2:    #787b86;
+      --tx3:    #b2b5be;
+      --blue:   #2962ff;
+      --blue-h: #1e53e5;
+      --red:    #f23645;
+      --green:  #089981;
+      --nav-bg: #1e222d;
+      --nav-bd: #2a2e39;
+      --nav-tx: #d1d4dc;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+      font-size: 15px;
+      background: var(--nav-bg);
+      color: var(--tx);
+      min-height: 100vh;
+    }
+    /* Nav */
+    .nav {
+      height: 48px;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--nav-bd);
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 10px;
+    }
+    .nav-logo { display:flex; align-items:center; gap:8px; text-decoration:none; }
+    .logo-mark {
+      width:28px; height:28px;
+      background: linear-gradient(135deg,#2962ff,#0039cb);
+      border-radius:7px;
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:15px; font-weight:800; font-style:italic;
+    }
+    .logo-name  { font-size:15px; font-weight:700; color:#fff; letter-spacing:-.025em; }
+    .logo-name em { color:#7b9ef0; font-style:normal; }
+    .logo-sub   { font-size:9px; font-weight:500; color:rgba(209,212,220,.5); letter-spacing:.12em; text-transform:uppercase; margin-top:1px; }
+    .nav-link {
+      margin-left:auto;
+      font-size:13px; color:var(--nav-tx); text-decoration:none;
+      padding:4px 10px; border-radius:5px; border:1px solid var(--nav-bd);
+      transition:border-color .15s;
+    }
+    .nav-link:hover { border-color:#3d4663; }
+
+    /* Page layout */
+    .page {
+      min-height: calc(100vh - 48px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 32px 16px;
+    }
+
+    /* Card */
+    .card {
+      width: 100%; max-width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.28);
+      padding: 36px 32px;
+    }
+
+    .card-header { text-align: center; margin-bottom: 28px; }
+    .card-icon {
+      width: 48px; height: 48px; margin: 0 auto 14px;
+      background: linear-gradient(135deg,#2962ff,#0039cb);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color:#fff; font-size:20px;
+    }
+    .card-title  { font-size:20px; font-weight:700; color:var(--tx); }
+    .card-sub    { font-size:13px; color:var(--tx2); margin-top:4px; }
+
+    /* Form */
+    .fld { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+    .fld label { font-size:13px; font-weight:500; color:var(--tx2); }
+    .inp {
+      height: 42px; padding: 0 12px;
+      border: 1.5px solid var(--ln2); border-radius: 8px;
+      background: var(--surface); color: var(--tx);
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .inp:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(41,98,255,.1); }
+    .inp::placeholder { color:var(--tx3); }
+
+    /* Button */
+    .btn-primary {
+      width: 100%; height: 44px;
+      background: var(--blue); color: #fff;
+      border: none; border-radius: 8px;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-top: 6px;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: background .15s;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--blue-h); }
+    .btn-primary:disabled { opacity:.55; cursor:not-allowed; }
+
+    /* Alert */
+    .alert {
+      padding: 10px 13px; border-radius: 8px;
+      font-size: 13px; margin-bottom: 14px;
+      display: none; align-items: center; gap: 7px;
+    }
+    .alert.show { display: flex; }
+    .alert-err  { background: rgba(242,54,69,.08); border:1px solid rgba(242,54,69,.3); color:var(--red); }
+    .alert-ok   { background: rgba(8,153,129,.08); border:1px solid rgba(8,153,129,.3); color:var(--green); }
+
+    /* Footer link */
+    .bottom-link { text-align:center; margin-top:20px; font-size:13px; color:var(--tx2); }
+    .bottom-link a { color:var(--blue); text-decoration:none; font-weight:500; }
+    .bottom-link a:hover { text-decoration:underline; }
+
+    /* Divider */
+    .divider { height:1px; background:var(--ln); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-mark">α</div>
+    <div style="display:flex;flex-direction:column;line-height:1;">
+      <span class="logo-name">Alpha<em>Station</em></span>
+      <span class="logo-sub">by EduMGT</span>
+    </div>
+  </a>
+  <a href="/signup" class="nav-link">
+    <i class="fa-solid fa-user-plus" style="font-size:11px;margin-right:5px;"></i>회원가입
+  </a>
+</nav>
+
+<div class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+      <div class="card-title">로그인</div>
+      <div class="card-sub">AlphaStation에 오신 것을 환영합니다</div>
+    </div>
+
+    <div id="alert-err" class="alert alert-err">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span id="alert-err-msg">오류가 발생했습니다.</span>
+    </div>
+
+    <form id="login-form" autocomplete="on">
+      <div class="fld">
+        <label for="username">사용자명</label>
+        <input id="username" name="username" class="inp" type="text" placeholder="사용자명을 입력하세요" autocomplete="username" />
+      </div>
+      <div class="fld">
+        <label for="password">비밀번호</label>
+        <input id="password" name="password" class="inp" type="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password" />
+      </div>
+      <button type="submit" id="submit-btn" class="btn-primary">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        <span id="btn-text">로그인</span>
+      </button>
+    </form>
+
+    <div class="divider"></div>
+    <div class="bottom-link">
+      계정이 없으신가요? <a href="/signup">회원가입</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = "{{ api_base_url|escapejs }}";
+  const AS_USER_KEY = 'as_user';
+
+  // 이미 로그인된 경우 메인으로 리디렉션
+  if (localStorage.getItem(AS_USER_KEY)) {
+    location.replace('/');
+  }
+
+  const form     = document.getElementById('login-form');
+  const alertErr = document.getElementById('alert-err');
+  const alertMsg = document.getElementById('alert-err-msg');
+  const submitBtn = document.getElementById('submit-btn');
+  const btnText  = document.getElementById('btn-text');
+
+  const showErr = msg => {
+    alertMsg.textContent = msg;
+    alertErr.classList.add('show');
+  };
+  const hideErr = () => alertErr.classList.remove('show');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideErr();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    if (!username || !password) { showErr('사용자명과 비밀번호를 입력해 주세요.'); return; }
+
+    submitBtn.disabled = true;
+    btnText.textContent = '로그인 중...';
+    try {
+      const res  = await fetch(`${API_BASE}/api/mongo/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '로그인에 실패했습니다.');
+      localStorage.setItem(AS_USER_KEY, JSON.stringify(data.user));
+      location.replace('/');
+    } catch (err) {
+      showErr(String(err.message || err));
+      submitBtn.disabled = false;
+      btnText.textContent = '로그인';
+    }
+  });
+</script>
+</body>
+</html>

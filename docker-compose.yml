@@ -19,7 +19,7 @@ services:
     - 0.0.0.0:8000
     environment:
       FLASK_API_BASE_URL: http://localhost:5000
-      AIRFLOW_UI_URL: http://localhost:8080
+      AIRFLOW_UI_URL: http://localhost:8180
     ports:
     - 8931:8000
     volumes:
@@ -69,7 +69,7 @@ services:
       PYTHONPATH: /opt/airflow/project
       _PIP_ADDITIONAL_REQUIREMENTS: pymongo requests beautifulsoup4 lxml yfinance pandas numpy scikit-learn scipy joblib xgboost
     ports:
-    - 8080:8080
+    - 8180:8080
     volumes:
     - ./airflow/dags:/opt/airflow/dags
     - .:/opt/airflow/project

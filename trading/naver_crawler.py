@@ -107,12 +107,11 @@ class NaverFinanceCrawler:
                     timeout=10,
                 )
                 resp.raise_for_status()
-                resp.encoding = "euc-kr"
             except Exception as exc:
                 logger.warning("페이지 %d 요청 실패: %s", page, exc)
                 break
 
-            soup = self._bs4(resp.text, "lxml")
+            soup = self._bs4(resp.content, "lxml")
             table = soup.find("table", class_="type2")
             if table is None:
                 logger.debug("표 없음 – 페이지 %d", page)
@@ -184,7 +183,7 @@ class NaverFinanceCrawler:
             logger.warning("종목 정보 요청 실패: %s", exc)
             return {"ticker": ticker, "error": str(exc)}
 
-        soup = self._bs4(resp.text, "lxml")
+        soup = self._bs4(resp.content, "lxml")
 
         def _text(sel: str) -> str:
             el = soup.select_one(sel)
@@ -246,12 +245,11 @@ def get_market_stocks(
                 timeout=10,
             )
             resp.raise_for_status()
-            resp.encoding = "euc-kr"
         except Exception as exc:
             logger.warning("시장 목록 페이지 %d 실패: %s", page, exc)
             break
 
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.content.decode("euc-kr", errors="replace"), "lxml")
         table = soup.find("table", class_="type_2")
         if table is None:
             break

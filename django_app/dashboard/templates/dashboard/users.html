@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원 관리 · AlphaStation</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg:     #f0f3fa;
+      --surface:#ffffff;
+      --s2:     #f8f9fd;
+      --ln:     #e0e3eb;
+      --ln2:    #d1d4dc;
+      --tx:     #131722;
+      --tx2:    #787b86;
+      --tx3:    #b2b5be;
+      --blue:   #2962ff;
+      --blue-h: #1e53e5;
+      --red:    #f23645;
+      --green:  #089981;
+      --amber:  #f59e0b;
+      --nav-bg: #1e222d;
+      --nav-bd: #2a2e39;
+      --nav-tx: #d1d4dc;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+      font-size: 15px;
+      background: var(--bg);
+      color: var(--tx);
+      min-height: 100vh;
+    }
+    /* Nav */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      height: 48px;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--nav-bd);
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 10px;
+    }
+    .nav-logo { display:flex; align-items:center; gap:8px; text-decoration:none; }
+    .logo-mark {
+      width:28px; height:28px;
+      background: linear-gradient(135deg,#2962ff,#0039cb);
+      border-radius:7px;
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:15px; font-weight:800; font-style:italic;
+    }
+    .logo-name  { font-size:15px; font-weight:700; color:#fff; letter-spacing:-.025em; }
+    .logo-name em { color:#7b9ef0; font-style:normal; }
+    .logo-sub   { font-size:9px; font-weight:500; color:rgba(209,212,220,.5); letter-spacing:.12em; text-transform:uppercase; margin-top:1px; }
+    .nav-right  { margin-left:auto; display:flex; align-items:center; gap:8px; }
+    .nav-badge {
+      display:flex; align-items:center; gap:5px;
+      font-size:12px; color:var(--nav-tx);
+      padding:4px 9px; border-radius:5px;
+      border:1px solid var(--nav-bd);
+      text-decoration:none;
+      transition:border-color .15s;
+      white-space:nowrap; cursor:default;
+    }
+    .nav-badge.link { cursor:pointer; }
+    .nav-badge.link:hover { border-color:#3d4663; }
+    /* Main content */
+    .main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+    /* Page header */
+    .page-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap; margin-bottom: 22px;
+    }
+    .page-title { font-size:20px; font-weight:700; color:var(--tx); display:flex; align-items:center; gap:9px; }
+    .page-title i { color:var(--blue); }
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ln);
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+    .card-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--ln);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .card-head-title { font-size:14px; font-weight:600; color:var(--tx); display:flex; align-items:center; gap:7px; }
+    .card-body { padding: 18px; }
+    /* Form grid */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+    @media (max-width: 700px) { .form-row { grid-template-columns: 1fr; } }
+    .fld { display:flex; flex-direction:column; gap:5px; }
+    .fld label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--tx2); }
+    .inp, .sel {
+      height: 38px; padding: 0 10px;
+      border: 1px solid var(--ln2); border-radius: 7px;
+      background: var(--surface); color: var(--tx);
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .inp:focus, .sel:focus { border-color:var(--blue); box-shadow:0 0 0 2px rgba(41,98,255,.1); }
+    .inp::placeholder { color:var(--tx3); }
+    /* Buttons */
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:5px;
+      height:38px; padding:0 14px; border-radius:7px;
+      font-family:inherit; font-size:13px; font-weight:500;
+      cursor:pointer; border:1px solid transparent;
+      transition:background .15s, border-color .15s;
+      white-space:nowrap;
+    }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-primary { background:var(--blue); color:#fff; }
+    .btn-primary:hover:not(:disabled) { background:var(--blue-h); }
+    .btn-ghost { background:var(--surface); border-color:var(--ln2); color:var(--tx2); }
+    .btn-ghost:hover:not(:disabled) { border-color:var(--blue); color:var(--blue); }
+    .btn-danger { background:rgba(242,54,69,.08); border-color:rgba(242,54,69,.3); color:var(--red); }
+    .btn-danger:hover:not(:disabled) { background:rgba(242,54,69,.14); }
+    .btn-sm { height:30px; padding:0 10px; font-size:12px; border-radius:6px; }
+    /* Table */
+    .tbl { width:100%; border-collapse:collapse; font-size:13px; }
+    .tbl th { padding:8px 12px; background:var(--s2); color:var(--tx2); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; border-bottom:1px solid var(--ln); text-align:left; white-space:nowrap; }
+    .tbl td { padding:9px 12px; border-bottom:1px solid var(--ln); color:var(--tx); vertical-align:middle; }
+    .tbl tr:last-child td { border-bottom:none; }
+    .tbl tbody tr:hover td { background:var(--s2); }
+    /* Badge */
+    .badge {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:2px 9px; border-radius:100px;
+      font-size:12px; font-weight:500;
+    }
+    .badge-admin { background:rgba(41,98,255,.1); border:1px solid rgba(41,98,255,.25); color:var(--blue); }
+    .badge-user  { background:rgba(120,123,134,.1); border:1px solid rgba(120,123,134,.25); color:var(--tx2); }
+    .badge-ok    { background:rgba(8,153,129,.1); border:1px solid rgba(8,153,129,.3); color:var(--green); }
+    .badge-off   { background:rgba(242,54,69,.08); border:1px solid rgba(242,54,69,.25); color:var(--red); }
+    /* Alert */
+    .alert {
+      padding:10px 13px; border-radius:8px;
+      font-size:13px; margin-bottom:14px;
+      display:none; align-items:center; gap:7px;
+    }
+    .alert.show { display:flex; }
+    .alert-err { background:rgba(242,54,69,.08); border:1px solid rgba(242,54,69,.3); color:var(--red); }
+    .alert-ok  { background:rgba(8,153,129,.08);  border:1px solid rgba(8,153,129,.3); color:var(--green); }
+    /* Empty / Loading */
+    .empty { padding:32px; text-align:center; font-size:13px; color:var(--tx2); }
+    .dot { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .dot-ok { background:var(--green); box-shadow:0 0 4px rgba(8,153,129,.6); }
+    .dot-fail { background:var(--red); box-shadow:0 0 4px rgba(242,54,69,.6); }
+    /* Confirm dialog overlay */
+    .confirm-bd {
+      position:fixed; inset:0; z-index:300;
+      background:rgba(0,0,0,.4);
+      display:flex; align-items:center; justify-content:center; padding:14px;
+      opacity:0; pointer-events:none; transition:opacity .2s;
+    }
+    .confirm-bd.show { opacity:1; pointer-events:auto; }
+    .confirm-box {
+      background:var(--surface); border:1px solid var(--ln);
+      border-radius:14px; padding:28px 26px;
+      max-width:360px; width:100%;
+      box-shadow:0 16px 48px rgba(0,0,0,.18);
+      transform:translateY(-8px); transition:transform .2s;
+    }
+    .confirm-bd.show .confirm-box { transform:translateY(0); }
+    .confirm-title { font-size:16px; font-weight:700; color:var(--tx); margin-bottom:8px; }
+    .confirm-sub   { font-size:13px; color:var(--tx2); line-height:1.65; margin-bottom:20px; }
+    .confirm-btns  { display:flex; gap:8px; justify-content:flex-end; }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <div class="logo-mark">α</div>
+    <div style="display:flex;flex-direction:column;line-height:1;">
+      <span class="logo-name">Alpha<em>Station</em></span>
+      <span class="logo-sub">by EduMGT</span>
+    </div>
+  </a>
+  <div class="nav-right">
+    <span class="nav-badge">
+      <span class="dot dot-ok" id="mongo-dot"></span>
+      <span id="mongo-lbl">MongoDB</span>
+    </span>
+    <a href="/" class="nav-badge link">
+      <i class="fa-solid fa-chart-line" style="font-size:10px;"></i> 대시보드
+    </a>
+    <span class="nav-badge" id="user-badge" style="display:none;"></span>
+    <button onclick="logout()" class="nav-badge link" style="border:none;background:none;">
+      <i class="fa-solid fa-right-from-bracket" style="font-size:10px;"></i> 로그아웃
+    </button>
+  </div>
+</nav>
+
+<!-- ── CONFIRM DIALOG ── -->
+<div class="confirm-bd" id="confirm-bd">
+  <div class="confirm-box">
+    <div class="confirm-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);margin-right:7px;"></i>사용자 삭제</div>
+    <div class="confirm-sub" id="confirm-msg">이 사용자를 삭제하시겠습니까? 삭제된 계정은 복구할 수 없습니다.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">취소</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">삭제 확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<main class="main">
+  <!-- Auth guard message (hidden by default) -->
+  <div id="auth-guard" style="display:none;padding:60px 20px;text-align:center;">
+    <i class="fa-solid fa-lock" style="font-size:36px;color:var(--tx3);margin-bottom:16px;display:block;"></i>
+    <p style="font-size:16px;font-weight:600;color:var(--tx);">접근 권한이 없습니다</p>
+    <p style="font-size:13px;color:var(--tx2);margin-top:6px;">관리자 계정으로 로그인해야 합니다.</p>
+    <a href="/login" class="btn btn-primary" style="display:inline-flex;margin-top:18px;text-decoration:none;">
+      <i class="fa-solid fa-right-to-bracket"></i> 로그인 페이지로
+    </a>
+  </div>
+
+  <!-- Actual content -->
+  <div id="content" style="display:none;">
+    <div class="page-hd">
+      <div class="page-title">
+        <i class="fa-solid fa-users"></i> 회원 관리
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="loadUsers()">
+          <i class="fa-solid fa-rotate-right"></i> 새로고침
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert -->
+    <div id="alert-err" class="alert alert-err"><i class="fa-solid fa-circle-exclamation"></i><span id="alert-err-msg"></span></div>
+    <div id="alert-ok"  class="alert alert-ok" ><i class="fa-solid fa-circle-check"></i><span id="alert-ok-msg"></span></div>
+
+    <!-- Create user card -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="fa-solid fa-user-plus" style="color:var(--blue);"></i> 새 사용자 추가
+        </div>
+        <button class="btn btn-ghost btn-sm" id="toggle-form-btn" onclick="toggleForm()">
+          <i class="fa-solid fa-chevron-up" id="toggle-icon"></i>
+        </button>
+      </div>
+      <div class="card-body" id="create-form-body">
+        <form id="create-form">
+          <div class="form-row">
+            <div class="fld">
+              <label>사용자명</label>
+              <input id="new-username" class="inp" type="text" placeholder="2자 이상" />
+            </div>
+            <div class="fld">
+              <label>비밀번호</label>
+              <input id="new-password" class="inp" type="password" placeholder="4자 이상" />
+            </div>
+            <div class="fld">
+              <label>권한</label>
+              <select id="new-role" class="sel">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+            <button type="submit" id="create-btn" class="btn btn-primary">
+              <i class="fa-solid fa-plus"></i> 추가
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- User list card -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="fa-solid fa-list" style="color:var(--blue);"></i>
+          사용자 목록
+          <span id="user-count" style="font-size:12px;font-weight:400;color:var(--tx2);"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <div id="user-table-wrap">
+          <div class="empty" id="table-loading">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:18px;margin-bottom:8px;display:block;"></i>
+            불러오는 중...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API_BASE    = "{{ api_base_url|escapejs }}";
+  const AS_USER_KEY = 'as_user';
+
+  let currentUser = null;
+  let deleteTargetId   = null;
+  let deleteTargetName = null;
+  let formOpen = true;
+
+  /* ── AUTH ── */
+  function logout() {
+    localStorage.removeItem(AS_USER_KEY);
+    location.replace('/login');
+  }
+
+  function initAuth() {
+    const raw = localStorage.getItem(AS_USER_KEY);
+    if (!raw) { location.replace('/login'); return; }
+    currentUser = JSON.parse(raw);
+    if (currentUser.role !== 'admin') {
+      document.getElementById('auth-guard').style.display = 'block';
+      return;
+    }
+    document.getElementById('user-badge').style.display = 'inline-flex';
+    document.getElementById('user-badge').innerHTML =
+      `<i class="fa-solid fa-user-shield" style="font-size:10px;color:#7b9ef0;"></i> ${currentUser.username}`;
+    document.getElementById('content').style.display = 'block';
+    checkMongoHealth();
+    loadUsers();
+  }
+
+  /* ── HEALTH ── */
+  async function checkMongoHealth() {
+    try {
+      const r = await fetch(`${API_BASE}/api/mongo/health`);
+      const dot = document.getElementById('mongo-dot');
+      const lbl = document.getElementById('mongo-lbl');
+      if (r.ok) { dot.className='dot dot-ok'; lbl.textContent='MongoDB 연결됨'; }
+      else       { dot.className='dot dot-fail'; lbl.textContent='MongoDB 미연결'; }
+    } catch { document.getElementById('mongo-dot').className='dot dot-fail'; }
+  }
+
+  /* ── ALERTS ── */
+  const showErr = msg => {
+    document.getElementById('alert-err-msg').textContent = msg;
+    document.getElementById('alert-err').classList.add('show');
+    document.getElementById('alert-ok').classList.remove('show');
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+  const showOk = msg => {
+    document.getElementById('alert-ok-msg').textContent = msg;
+    document.getElementById('alert-ok').classList.add('show');
+    document.getElementById('alert-err').classList.remove('show');
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+  const hideAlerts = () => {
+    document.getElementById('alert-err').classList.remove('show');
+    document.getElementById('alert-ok').classList.remove('show');
+  };
+
+  /* ── LOAD USERS ── */
+  async function loadUsers() {
+    const wrap = document.getElementById('user-table-wrap');
+    wrap.innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin" style="font-size:18px;margin-bottom:8px;display:block;"></i>불러오는 중...</div>';
+    document.getElementById('user-count').textContent = '';
+    try {
+      const res  = await fetch(`${API_BASE}/api/mongo/users?limit=200`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '목록 조회 실패');
+      document.getElementById('user-count').textContent = `(총 ${data.length}명)`;
+      if (!data.length) {
+        wrap.innerHTML = '<div class="empty">등록된 사용자가 없습니다.</div>';
+        return;
+      }
+      wrap.innerHTML = `
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>사용자명</th>
+              <th>권한</th>
+              <th>상태</th>
+              <th>ID</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="user-tbody"></tbody>
+        </table>`;
+      const tbody = document.getElementById('user-tbody');
+      data.forEach(u => {
+        const tr = document.createElement('tr');
+        const isSelf = currentUser && u.id === currentUser.id;
+        tr.innerHTML = `
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:30px;height:30px;border-radius:50%;background:${roleColor(u.role)};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">
+                ${(u.username || '?')[0].toUpperCase()}
+              </div>
+              <span style="font-weight:500;">${esc(u.username)}</span>
+              ${isSelf ? '<span style="font-size:11px;color:var(--tx3);">(나)</span>' : ''}
+            </div>
+          </td>
+          <td><span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${esc(u.role)}</span></td>
+          <td><span class="badge ${u.active !== false ? 'badge-ok' : 'badge-off'}">${u.active !== false ? '활성' : '비활성'}</span></td>
+          <td><code style="font-size:11px;color:var(--tx3);">${esc(u.id||'-')}</code></td>
+          <td style="text-align:right;">
+            ${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="openConfirm('${esc(u.id)}','${esc(u.username)}')">
+              <i class="fa-solid fa-trash"></i> 삭제
+            </button>` : ''}
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    } catch(err) {
+      wrap.innerHTML = `<div class="empty" style="color:var(--red);">${esc(String(err.message||err))}</div>`;
+    }
+  }
+
+  const roleColor = r => r === 'admin' ? '#2962ff' : '#787b86';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  /* ── CREATE USER ── */
+  document.getElementById('create-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    hideAlerts();
+    const username = document.getElementById('new-username').value.trim();
+    const password = document.getElementById('new-password').value;
+    const role     = document.getElementById('new-role').value;
+    if (!username || username.length < 2) { showErr('사용자명은 2자 이상이어야 합니다.'); return; }
+    if (!password || password.length < 4) { showErr('비밀번호는 4자 이상이어야 합니다.'); return; }
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 처리 중';
+    try {
+      const res  = await fetch(`${API_BASE}/api/mongo/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, role }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail));
+      showOk(`사용자 "${username}"이(가) 생성되었습니다.`);
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('new-role').value = 'user';
+      await loadUsers();
+    } catch(err) {
+      showErr(String(err.message||err));
+    } finally {
+      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plus"></i> 추가';
+    }
+  });
+
+  /* ── TOGGLE FORM ── */
+  function toggleForm() {
+    formOpen = !formOpen;
+    document.getElementById('create-form-body').style.display = formOpen ? 'block' : 'none';
+    document.getElementById('toggle-icon').className = formOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
+
+  /* ── DELETE CONFIRM ── */
+  function openConfirm(id, username) {
+    deleteTargetId   = id;
+    deleteTargetName = username;
+    document.getElementById('confirm-msg').textContent =
+      `"${username}" 계정을 삭제하시겠습니까? 삭제된 계정은 복구할 수 없습니다.`;
+    document.getElementById('confirm-bd').classList.add('show');
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-bd').classList.remove('show');
+    deleteTargetId = deleteTargetName = null;
+  }
+  document.getElementById('confirm-bd').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirm-bd')) closeConfirm();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirm(); });
+
+  document.getElementById('confirm-ok-btn').addEventListener('click', async () => {
+    if (!deleteTargetId) return;
+    const btn = document.getElementById('confirm-ok-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 삭제 중';
+    try {
+      const res = await fetch(`${API_BASE}/api/mongo/users/${deleteTargetId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(typeof data.detail==='string'?data.detail:JSON.stringify(data.detail));
+      closeConfirm();
+      showOk(`사용자 "${deleteTargetName}"이(가) 삭제되었습니다.`);
+      await loadUsers();
+    } catch(err) {
+      closeConfirm();
+      showErr(String(err.message||err));
+    } finally {
+      btn.disabled = false; btn.innerHTML = '삭제 확인';
+    }
+  });
+
+  /* ── INIT ── */
+  initAuth();
+</script>
+</body>
+</html>

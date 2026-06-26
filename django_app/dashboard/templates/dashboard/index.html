@@ -293,41 +293,6 @@
     .pill-warn { border-color: rgba(245,158,11,.35);  background: rgba(245,158,11,.08);  color: #92620a; }
     .pill-fail { border-color: rgba(242,54,69,.35);   background: rgba(242,54,69,.08);   color: var(--red); }
 
-    /* ── MODAL ───────────────────────────────────────── */
-    .modal-bd {
-      position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,.44);
-      display: flex; align-items: flex-start; justify-content: center;
-      padding: 56px 14px 14px;
-      opacity: 0; pointer-events: none;
-      transition: opacity .2s ease;
-      overflow-y: auto;
-    }
-    .modal-bd.show { opacity: 1; pointer-events: auto; }
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--ln);
-      border-radius: 16px;
-      width: 100%; max-width: 920px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.15);
-      transform: translateY(-10px);
-      transition: transform .2s ease;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .modal-bd.show .modal { transform: translateY(0); }
-
-    /* ── MODAL TABS ──────────────────────────────────── */
-    .mtab {
-      padding: 10px 14px;
-      font-size: 13px; font-weight: 500;
-      color: var(--tx2); cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color .15s, border-color .15s;
-      user-select: none;
-    }
-    .mtab.active { color: var(--blue); border-bottom-color: var(--blue); }
-    .mtab:hover:not(.active) { color: var(--tx); }
 
     /* ── SUMMARY CARDS ───────────────────────────────── */
     .sum-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 10px; }
@@ -344,9 +309,20 @@
     .log-item { padding: 9px 13px; font-size: 14px; color: var(--tx2); line-height: 1.65; border-bottom: 1px solid var(--ln); }
     .log-item:last-child { border-bottom: none; }
 
-    /* ── CHART GRID ──────────────────────────────────── */
-    #chart-area { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 600px) { #chart-area { grid-template-columns: 1fr; } }
+
+    /* ── STOCK SEARCH DROPDOWN ──────────────────────── */
+    .si {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; cursor: pointer;
+      border-bottom: 1px solid var(--ln);
+      transition: background .1s;
+    }
+    .si:last-child { border-bottom: none; }
+    .si:hover { background: var(--s2); }
+    .si-ticker { font-size: 13px; font-weight: 700; color: var(--blue); font-family: monospace; min-width: 58px; }
+    .si-name   { font-size: 13px; color: var(--tx); flex: 1; }
+    .si-mkt    { font-size: 10px; color: var(--tx3); padding: 1px 5px; background: var(--s2); border-radius: 3px; }
+    #search-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(41,98,255,.1); }
 
     /* ── SCROLLBAR ───────────────────────────────────── */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -385,6 +361,8 @@
       <i class="fa-solid fa-wind" style="font-size:10px;color:var(--tx3);"></i>
       Airflow
     </a>
+    <div style="width:1px;height:18px;background:var(--nav-bd);flex-shrink:0;"></div>
+    <div id="auth-nav" style="display:flex;align-items:center;gap:6px;flex-shrink:0;"></div>
   </div>
 </nav>
 
@@ -406,12 +384,15 @@
     <section>
       <p class="micro" style="margin-bottom:10px;">Ticket Setup</p>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <label class="fld">대표 종목코드
-          <input id="ticker" class="tv-inp" value="005930" />
-        </label>
-        <label class="fld">비교 종목코드
-          <input id="tickers" class="tv-inp" value="005930,000660,035420,051910" />
-        </label>
+        <div class="fld">군집 비교 종목코드
+          <div style="display:flex;gap:6px;align-items:flex-start;">
+            <input id="tickers" class="tv-inp" value="005930,000660,035420,051910" style="flex:1;min-width:0;" />
+            <button id="add-current-ticker" title="현재 선택 종목 추가" style="height:32px;padding:0 9px;border:1px solid var(--ln);border-radius:6px;background:var(--s2);color:var(--tx2);font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+              <i class="fa-solid fa-plus" style="margin-right:3px;"></i>추가
+            </button>
+          </div>
+          <span style="font-size:11px;color:var(--tx3);margin-top:3px;">쉼표로 구분 · 군집화 분석에 사용</span>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <label class="fld">데이터 소스
             <select id="source" class="tv-sel">
@@ -471,143 +452,170 @@
           <div class="ac-title">DL 방향 예측</div>
           <div class="ac-desc">LSTM/MLP 시퀀스 예측</div>
         </button>
-        <button data-action="forecast" class="ac">
-          <span class="ac-tag" style="color:var(--amber);"><i class="fa-solid fa-chart-line" style="margin-right:4px;"></i>Forecast</span>
-          <div class="ac-title">내일 주가 리포트</div>
-          <div class="ac-desc">예상 밴드와 핵심 시나리오 생성</div>
-        </button>
       </div>
     </section>
 
     <div style="height:1px;background:var(--ln);"></div>
 
-    <!-- Mongo Ops -->
+    <!-- Forecast Section -->
     <section>
-      <p class="micro" style="margin-bottom:10px;"><i class="fa-solid fa-leaf" style="color:#10b981;margin-right:4px;"></i>Mongo Ops · CRUD Console</p>
+      <p class="micro" style="margin-bottom:10px;"><i class="fa-solid fa-chart-line" style="color:var(--amber);margin-right:4px;"></i>Forecast · 내일 주가 리포트</p>
       <div style="display:flex;flex-direction:column;gap:9px;">
-        <label class="fld">사용자명
-          <input id="mongo-user" class="tv-inp" value="demo_user" />
+        <label class="fld">예측 종목코드
+          <input id="forecast-ticker" class="tv-inp" value="428560" placeholder="예: 428560" />
         </label>
-        <label class="fld">비밀번호
-          <input id="mongo-pass" type="password" class="tv-inp" placeholder="비밀번호 입력" />
-        </label>
-        <label class="fld">권한
-          <input id="mongo-role" class="tv-inp" value="user" />
-        </label>
-        <label class="fld">삭제 타입
-          <select id="mongo-delete-type" class="tv-sel">
-            <option value="users">users</option>
-            <option value="crawls">crawls</option>
-            <option value="analyses">analyses</option>
-          </select>
-        </label>
-        <label class="fld">삭제 대상 ID
-          <input id="mongo-delete-id" class="tv-inp" placeholder="MongoDB document id" />
-        </label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:2px;">
-          <button data-mongo-action="mongo-create-user"   class="btn btn-ghost" style="font-size:12px;">사용자 생성</button>
-          <button data-mongo-action="mongo-login"         class="btn btn-ghost" style="font-size:12px;">사용자 로그인</button>
-          <button data-mongo-action="mongo-list-users"    class="btn btn-ghost" style="font-size:12px;">사용자 목록</button>
-          <button data-mongo-action="mongo-list-crawls"   class="btn btn-ghost" style="font-size:12px;">크롤링 목록</button>
-          <button data-mongo-action="mongo-list-analyses" class="btn btn-ghost" style="font-size:12px;">분석 목록</button>
-          <button data-mongo-action="mongo-delete-doc"    class="btn btn-ghost" style="font-size:12px;color:var(--red);">문서 삭제</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label class="fld">소스
+            <select id="forecast-source" class="tv-sel">
+              <option value="naver">naver</option>
+              <option value="yfinance">yfinance</option>
+            </select>
+          </label>
+          <label class="fld">페이지 수
+            <input id="forecast-pages" type="number" min="1" max="50" class="tv-inp" value="15" />
+          </label>
         </div>
+        <button data-action="forecast" class="ac" style="margin-top:2px;">
+          <span class="ac-tag" style="color:var(--amber);"><i class="fa-solid fa-chart-line" style="margin-right:4px;"></i>Forecast</span>
+          <div class="ac-title">내일 주가 리포트 실행</div>
+          <div class="ac-desc">예상 밴드와 핵심 시나리오 생성</div>
+        </button>
       </div>
     </section>
+
   </div>
 </aside>
 
 <!-- ═══════════ MAIN ═══════════ -->
 <main style="max-width:1600px;margin:0 auto;padding:18px 14px 70px;">
 
-  <!-- Quick action bar -->
-  <div class="card" style="padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-    <span style="font-size:12px;color:var(--tx2);font-weight:500;white-space:nowrap;">
-      <i class="fa-solid fa-bolt" style="color:var(--amber);margin-right:4px;"></i>빠른 실행
-    </span>
-    <div style="width:1px;height:18px;background:var(--ln);"></div>
-    <button data-action="crawl"    class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-database" style="color:#06b6d4;margin-right:5px;"></i>데이터 수집</button>
-    <button data-action="cluster"  class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-circle-nodes" style="color:#10b981;margin-right:5px;"></i>군집화</button>
-    <button data-action="ml"       class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-brain" style="color:var(--blue);margin-right:5px;"></i>ML 예측</button>
-    <button data-action="dl"       class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-microchip" style="color:#a855f7;margin-right:5px;"></i>DL 예측</button>
-    <button data-action="forecast" class="btn btn-primary" style="font-size:12px;height:32px;margin-left:auto;"><i class="fa-solid fa-chart-line" style="margin-right:5px;"></i>주가 예측 리포트</button>
-  </div>
+  <!-- Stock search + quick actions card -->
+  <div class="card" style="padding:12px 14px;margin-bottom:14px;">
 
-  <!-- Content row -->
-  <div style="display:grid;grid-template-columns:1fr 310px;gap:14px;align-items:start;">
-    <!-- About -->
-    <div class="card" style="padding:18px;">
-      <p class="micro"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>About</p>
-      <h2 style="font-size:15px;font-weight:600;margin-top:6px;color:var(--tx);">AlphaStation</h2>
-      <p style="font-size:14px;color:var(--tx2);margin-top:8px;line-height:1.75;">
-        TradingView 톤의 워크스테이션 위에 국내 주식 크롤링, 군집화, ML/DL 분석, Mongo 기록, Airflow 배치 상태를 한 화면에서 다루도록 재구성했습니다.
-      </p>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
-        <span style="font-size:13px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Pretendard UI</span>
-        <span style="font-size:13px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">TradingView Style</span>
-        <span style="font-size:13px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Signal + Forecast</span>
-        <span style="font-size:13px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Mongo Ops</span>
-        <span style="font-size:13px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Airflow DAGs</span>
+    <!-- Row 1: Search -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--ln);flex-wrap:wrap;">
+
+      <!-- Search input + dropdown -->
+      <div id="stock-search-wrap" style="position:relative;flex:1;min-width:200px;max-width:440px;">
+        <div id="search-box" style="display:flex;align-items:center;gap:7px;border:1.5px solid var(--ln2);border-radius:8px;height:36px;padding:0 10px;background:var(--surface);transition:border-color .15s;">
+          <i class="fa-solid fa-magnifying-glass" style="color:var(--tx3);font-size:12px;flex-shrink:0;"></i>
+          <input id="stock-query" type="text" placeholder="종목명 또는 코드 검색…"
+                 style="border:none;outline:none;background:transparent;font-family:inherit;font-size:13px;color:var(--tx);flex:1;min-width:0;"
+                 autocomplete="off" spellcheck="false" />
+          <button id="search-clear" style="display:none;background:none;border:none;cursor:pointer;padding:2px;color:var(--tx3);line-height:1;font-size:12px;">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <!-- Autocomplete dropdown -->
+        <div id="search-dropdown"
+             style="display:none;position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:300;
+                    background:var(--surface);border:1px solid var(--ln);border-radius:10px;
+                    box-shadow:0 8px 28px rgba(0,0,0,.13);overflow:hidden;max-height:300px;overflow-y:auto;">
+        </div>
       </div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <span class="micro">AlphaStation · Django Web / Flask API / Airflow Ops</span>
-        <span id="status-pill" class="pill pill-n">대기 중</span>
+
+      <!-- Selected ticker badge -->
+      <div id="selected-ticker-badge"
+           style="display:flex;align-items:center;gap:6px;padding:5px 11px;
+                  background:rgba(41,98,255,.07);border:1px solid rgba(41,98,255,.25);border-radius:7px;flex-shrink:0;">
+        <i class="fa-solid fa-chart-candlestick" style="font-size:11px;color:var(--blue);"></i>
+        <code id="badge-ticker" style="font-size:13px;font-weight:700;color:var(--blue);font-family:monospace;">005930</code>
+        <span id="badge-name"   style="font-size:13px;color:var(--tx);">삼성전자</span>
+        <span id="badge-market" style="font-size:10px;color:var(--tx3);padding:1px 5px;background:var(--s2);border-radius:3px;"></span>
       </div>
+
+      <!-- hidden input kept for getC() -->
+      <input type="hidden" id="ticker" value="005930" />
     </div>
 
-    <!-- Status Log -->
-    <div class="card" style="padding:15px;">
-      <p class="micro" style="margin-bottom:10px;"><i class="fa-solid fa-terminal" style="margin-right:4px;"></i>Status Log</p>
+    <!-- Row 2: Quick actions -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--tx2);font-weight:500;white-space:nowrap;">
+        <i class="fa-solid fa-bolt" style="color:var(--amber);margin-right:4px;"></i>빠른 실행
+      </span>
+      <div style="width:1px;height:18px;background:var(--ln);flex-shrink:0;"></div>
+      <button data-action="crawl"   class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-database" style="color:#06b6d4;margin-right:5px;"></i>데이터 수집</button>
+      <button data-action="cluster" class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-circle-nodes" style="color:#10b981;margin-right:5px;"></i>군집화</button>
+      <button data-action="ml"      class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-brain" style="color:var(--blue);margin-right:5px;"></i>ML 예측</button>
+      <button data-action="dl"      class="btn btn-ghost" style="font-size:12px;height:32px;"><i class="fa-solid fa-microchip" style="color:#a855f7;margin-right:5px;"></i>DL 예측</button>
+      <button id="forecast-quick-btn" class="btn btn-primary" style="font-size:12px;height:32px;margin-left:auto;">
+        <i class="fa-solid fa-chart-line" style="margin-right:5px;"></i>주가 예측 리포트
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── Workspace: [result area] | [log] ── -->
+  <div id="workspace" style="display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:14px;align-items:start;">
+
+    <!-- Left: result column -->
+    <div id="result-col">
+
+      <!-- Initial state (replaced once action runs) -->
+      <div id="initial-card" class="card" style="padding:18px;">
+        <p class="micro"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>About</p>
+        <h2 style="font-size:15px;font-weight:600;margin-top:6px;color:var(--tx);">AlphaStation</h2>
+        <p style="font-size:14px;color:var(--tx2);margin-top:8px;line-height:1.75;">
+          TradingView 톤의 워크스테이션 위에 국내 주식 크롤링·군집화·ML/DL 분석을 한 화면에서 다룹니다.<br>
+          좌측 메뉴(<i class="fa-solid fa-bars" style="font-size:11px;"></i>)를 열어 종목코드와 파라미터를 설정하고 상단 <strong>빠른 실행</strong>에서 분석을 시작하세요.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+          <span style="font-size:12px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Pretendard UI</span>
+          <span style="font-size:12px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">TradingView Style</span>
+          <span style="font-size:12px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Signal + Forecast</span>
+          <span style="font-size:12px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">회원 관리</span>
+          <span style="font-size:12px;padding:3px 10px;border-radius:100px;border:1px solid var(--ln);color:var(--tx2);">Airflow DAGs</span>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--ln);font-size:12px;color:var(--tx3);">
+          AlphaStation · Django Web / Flask API / Airflow Ops
+        </div>
+      </div>
+
+      <!-- Result panels (shown after action runs) -->
+      <div id="result-panels" style="display:none;">
+
+        <!-- Status bar -->
+        <div class="card" style="padding:11px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <h2 id="result-title" style="font-size:15px;font-weight:600;color:var(--tx);margin:0;">실행 결과</h2>
+          <code id="result-endpoint" style="font-size:11px;color:var(--tx3);"></code>
+          <span id="status-pill" class="pill pill-n" style="margin-left:auto;">대기 중</span>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="sum-grid" id="sum-grid" style="margin-bottom:12px;"></div>
+
+        <!-- Charts grid -->
+        <div id="chart-area" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:12px;"></div>
+
+        <!-- Data table (collapsible) -->
+        <div class="card" id="tbl-card" style="display:none;overflow:hidden;">
+          <div style="padding:9px 14px;border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" id="tbl-toggle">
+            <span class="micro"><i class="fa-solid fa-table" style="margin-right:5px;"></i>데이터</span>
+            <i class="fa-solid fa-chevron-down" id="tbl-icon" style="font-size:11px;color:var(--tx3);transition:transform .2s;"></i>
+          </div>
+          <div id="tbl-wrap" style="overflow-x:auto;display:none;"></div>
+        </div>
+
+      </div><!-- /result-panels -->
+    </div><!-- /result-col -->
+
+    <!-- Right: Status Log (sticky) -->
+    <div class="card" id="log-col" style="padding:15px;position:sticky;top:62px;">
+      <p class="micro" style="margin-bottom:8px;"><i class="fa-solid fa-terminal" style="margin-right:4px;"></i>Status Log</p>
       <div style="border:1px solid var(--ln);border-radius:8px;overflow:hidden;">
-        <div id="notes-list"></div>
+        <div id="notes-list"><div class="log-item" style="color:var(--tx3);">분석을 실행하면 로그가 표시됩니다.</div></div>
       </div>
     </div>
-  </div>
 
-  <!-- responsive: stack on mobile -->
+  </div><!-- /workspace -->
+
   <style>
     @media (max-width: 860px) {
-      main > div:last-child { grid-template-columns: 1fr !important; }
+      #workspace { grid-template-columns: 1fr !important; }
+      #log-col { position:static !important; }
     }
   </style>
 </main>
-
-<!-- ═══════════ RESULT MODAL ═══════════ -->
-<div class="modal-bd" id="modal-bd">
-  <div class="modal">
-    <!-- Head -->
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--ln);">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <h3 id="modal-title" style="font-size:15px;font-weight:600;color:var(--tx);">결과</h3>
-        <span id="modal-status" class="pill pill-warn"><i class="fa-solid fa-spinner fa-spin" style="font-size:10px;"></i>실행 중</span>
-      </div>
-      <button class="btn-icon" id="modal-close"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <!-- Endpoint -->
-    <div id="modal-sub" style="padding:6px 18px;border-bottom:1px solid var(--ln);font-size:11px;color:var(--tx3);font-family:monospace;">POST /api/...</div>
-    <!-- Tabs -->
-    <div style="display:flex;padding:0 18px;border-bottom:1px solid var(--ln);">
-      <div class="mtab active" data-tab="summary"><i class="fa-solid fa-table-cells" style="margin-right:5px;"></i>요약</div>
-      <div class="mtab" data-tab="charts"><i class="fa-solid fa-chart-bar" style="margin-right:5px;"></i>차트</div>
-      <div class="mtab" data-tab="table"><i class="fa-solid fa-table" style="margin-right:5px;"></i>데이터</div>
-      <div class="mtab" data-tab="log"><i class="fa-solid fa-list" style="margin-right:5px;"></i>로그</div>
-    </div>
-    <!-- Body -->
-    <div style="padding:18px;max-height:60vh;overflow-y:auto;">
-      <div id="tab-summary"><div class="sum-grid" id="sum-grid"></div></div>
-      <div id="tab-charts" style="display:none;"><div id="chart-area"></div></div>
-      <div id="tab-table" style="display:none;">
-        <div style="border:1px solid var(--ln);border-radius:8px;overflow:hidden;">
-          <div id="tbl-empty" style="padding:18px;font-size:13px;color:var(--tx2);">데이터가 없습니다.</div>
-          <div id="tbl-wrap" style="overflow-x:auto;display:none;"></div>
-        </div>
-      </div>
-      <div id="tab-log" style="display:none;">
-        <div style="border:1px solid var(--ln);border-radius:8px;overflow:hidden;"><div id="log-list"></div></div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ═══════════ FOOTER ═══════════ -->
 <footer class="site-footer">
@@ -642,7 +650,141 @@
 <script>
   const API_BASE    = "{{ api_base_url|escapejs }}";
   const AIRFLOW_URL = "{{ airflow_ui_url|escapejs }}";
-  let charts = [], mongoReady = false;
+  const AS_USER_KEY = 'as_user';
+  let charts = [];
+
+  /* ── AUTH NAV ── */
+  (function initAuthNav() {
+    const nav  = document.getElementById('auth-nav');
+    const user = JSON.parse(localStorage.getItem(AS_USER_KEY) || 'null');
+    if (user) {
+      nav.innerHTML = `
+        <span class="nav-badge"><i class="fa-solid fa-user" style="font-size:10px;color:#7b9ef0;margin-right:3px;"></i>${user.username}</span>
+        ${user.role === 'admin' ? '<a href="/users" class="nav-badge" style="cursor:pointer;"><i class="fa-solid fa-users" style="font-size:10px;margin-right:3px;"></i>회원 관리</a>' : ''}
+        <button onclick="logout()" class="nav-badge" style="cursor:pointer;border-color:rgba(242,54,69,.4);color:rgba(242,54,69,.9);background:none;">
+          <i class="fa-solid fa-right-from-bracket" style="font-size:10px;"></i> 로그아웃
+        </button>`;
+    } else {
+      nav.innerHTML = `<a href="/login" class="nav-badge" style="cursor:pointer;">
+        <i class="fa-solid fa-right-to-bracket" style="font-size:10px;margin-right:3px;"></i>로그인
+      </a>`;
+    }
+  })();
+  function logout() { localStorage.removeItem(AS_USER_KEY); location.replace('/login'); }
+
+  /* ── STOCK SEARCH ── */
+  (function initStockSearch() {
+    const queryEl    = document.getElementById("stock-query");
+    const dropdown   = document.getElementById("search-dropdown");
+    const clearBtn   = document.getElementById("search-clear");
+    const tickerHid  = document.getElementById("ticker");
+    const badgeTicker = document.getElementById("badge-ticker");
+    const badgeName   = document.getElementById("badge-name");
+    const badgeMarket = document.getElementById("badge-market");
+
+    let searchTimer = null;
+    let activeIdx   = -1;
+    let lastResults = [];
+
+    const setTicker = (ticker, name, market) => {
+      tickerHid.value         = ticker;
+      badgeTicker.textContent = ticker;
+      badgeName.textContent   = name;
+      badgeMarket.textContent = market || "";
+      const ft = document.getElementById("forecast-ticker");
+      if (ft) ft.value = ticker;
+    };
+
+    const closeDD = () => {
+      dropdown.style.display = "none";
+      activeIdx = -1;
+    };
+
+    const renderDD = items => {
+      lastResults = items;
+      if (!items.length) {
+        dropdown.innerHTML = `<div style="padding:12px 14px;font-size:13px;color:var(--tx2);">검색 결과가 없습니다.</div>`;
+      } else {
+        dropdown.innerHTML = items.map((it, i) => `
+          <div class="si" data-idx="${i}">
+            <span class="si-ticker">${it.ticker}</span>
+            <span class="si-name">${it.name}</span>
+            <span class="si-mkt">${it.market || ""}</span>
+          </div>`).join("");
+        dropdown.querySelectorAll(".si").forEach(el => {
+          el.addEventListener("mousedown", e => {
+            e.preventDefault();
+            const it = lastResults[Number(el.dataset.idx)];
+            queryEl.value = it.name;
+            clearBtn.style.display = "inline";
+            setTicker(it.ticker, it.name, it.market || "");
+            closeDD();
+          });
+        });
+      }
+      dropdown.style.display = "block";
+      activeIdx = -1;
+    };
+
+    const doSearch = async q => {
+      if (!q) { closeDD(); return; }
+      try {
+        const r = await fetch(`${API_BASE}/api/webapp/stock-search?q=${encodeURIComponent(q)}`);
+        renderDD(await r.json());
+      } catch { closeDD(); }
+    };
+
+    queryEl.addEventListener("input", () => {
+      const q = queryEl.value.trim();
+      clearBtn.style.display = q ? "inline" : "none";
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => doSearch(q), 230);
+    });
+
+    queryEl.addEventListener("keydown", e => {
+      const items = dropdown.querySelectorAll(".si");
+      if (!items.length) return;
+      if (e.key === "ArrowDown")  { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); }
+      else if (e.key === "Enter" && activeIdx >= 0) {
+        e.preventDefault();
+        const it = lastResults[activeIdx];
+        queryEl.value = it.name;
+        clearBtn.style.display = "inline";
+        setTicker(it.ticker, it.name, it.market || "");
+        closeDD(); return;
+      } else if (e.key === "Escape") { closeDD(); return; }
+      items.forEach((el, i) => el.style.background = i === activeIdx ? "var(--s2)" : "");
+      if (activeIdx >= 0) items[activeIdx].scrollIntoView({ block: "nearest" });
+    });
+
+    queryEl.addEventListener("focus", () => {
+      if (queryEl.value.trim() && lastResults.length) dropdown.style.display = "block";
+    });
+
+    clearBtn.addEventListener("click", () => {
+      queryEl.value = "";
+      clearBtn.style.display = "none";
+      closeDD();
+      queryEl.focus();
+    });
+
+    document.addEventListener("click", e => {
+      if (!document.getElementById("stock-search-wrap").contains(e.target)) closeDD();
+    });
+
+    /* "현재 종목 추가" 버튼 — offcanvas tickers 목록에 append */
+    const addBtn = document.getElementById("add-current-ticker");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+        const tickersEl = document.getElementById("tickers");
+        const cur = tickerHid.value.trim();
+        if (!cur) return;
+        const list = tickersEl.value.split(",").map(v => v.trim()).filter(Boolean);
+        if (!list.includes(cur)) { list.push(cur); tickersEl.value = list.join(","); }
+      });
+    }
+  })();
 
   /* ── OFFCANVAS ── */
   const oc     = document.getElementById("oc");
@@ -663,45 +805,29 @@
   ocBd.addEventListener("click", closeOC);
   document.getElementById("oc-close").addEventListener("click", closeOC);
 
-  /* ── MODAL ── */
-  const modalBd    = document.getElementById("modal-bd");
-  const modalTitle = document.getElementById("modal-title");
-  const modalSub   = document.getElementById("modal-sub");
-  const modalStat  = document.getElementById("modal-status");
-  const sumGrid    = document.getElementById("sum-grid");
-  const chartArea  = document.getElementById("chart-area");
-  const tblWrap    = document.getElementById("tbl-wrap");
-  const tblEmpty   = document.getElementById("tbl-empty");
-  const logList    = document.getElementById("log-list");
-  const openModal  = () => { modalBd.classList.add("show"); document.body.style.overflow = "hidden"; };
-  const closeModal = () => { modalBd.classList.remove("show"); document.body.style.overflow = ""; };
-  document.getElementById("modal-close").addEventListener("click", closeModal);
-  modalBd.addEventListener("click", e => { if (e.target === modalBd) closeModal(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeOC(); } });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeOC(); });
 
-  /* ── TABS ── */
-  const tabBtns   = document.querySelectorAll(".mtab");
-  const tabPanels = {
-    summary: document.getElementById("tab-summary"),
-    charts:  document.getElementById("tab-charts"),
-    table:   document.getElementById("tab-table"),
-    log:     document.getElementById("tab-log"),
-  };
-  tabBtns.forEach(btn => btn.addEventListener("click", () => {
-    tabBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    Object.values(tabPanels).forEach(p => p.style.display = "none");
-    tabPanels[btn.dataset.tab].style.display = "block";
-    if (btn.dataset.tab === "charts") charts.forEach(c => c.resize());
-  }));
+  /* ── INLINE RESULT ELEMENTS ── */
+  const sumGrid   = document.getElementById("sum-grid");
+  const chartArea = document.getElementById("chart-area");
+  const tblWrap   = document.getElementById("tbl-wrap");
+  const tblCard   = document.getElementById("tbl-card");
 
-  /* ── STATUS PILLS ── */
+  /* Table toggle */
+  let tblOpen = false;
+  document.getElementById("tbl-toggle").addEventListener("click", () => {
+    tblOpen = !tblOpen;
+    tblWrap.style.display = tblOpen ? "block" : "none";
+    document.getElementById("tbl-icon").style.transform = tblOpen ? "rotate(180deg)" : "";
+  });
+
+  /* ── STATUS PILL ── */
   const statusPill = document.getElementById("status-pill");
   const PILL = {
-    n:    { cls: "pill pill-n",    icon: "fa-circle" },
-    ok:   { cls: "pill pill-ok",   icon: "fa-circle-check" },
-    warn: { cls: "pill pill-warn", icon: "fa-spinner fa-spin" },
-    fail: { cls: "pill pill-fail", icon: "fa-circle-xmark" },
+    n:    { cls:"pill pill-n",    icon:"fa-circle" },
+    ok:   { cls:"pill pill-ok",   icon:"fa-circle-check" },
+    warn: { cls:"pill pill-warn", icon:"fa-spinner fa-spin" },
+    fail: { cls:"pill pill-fail", icon:"fa-circle-xmark" },
   };
   const setPill = (el, text, tone) => {
     const p = PILL[tone] || PILL.n;
@@ -713,10 +839,7 @@
   const renderNotes = notes => {
     document.getElementById("notes-list").innerHTML = notes.length
       ? notes.map(n => `<div class="log-item">${n}</div>`).join("")
-      : `<div class="log-item">메모가 없습니다.</div>`;
-  };
-  const renderLog = notes => {
-    logList.innerHTML = notes.map(n => `<div class="log-item">${n}</div>`).join("");
+      : `<div class="log-item" style="color:var(--tx3);">로그 없음</div>`;
   };
   const renderSummary = (items = []) => {
     sumGrid.innerHTML = !items.length
@@ -724,49 +847,68 @@
       : items.map(it => `
           <div class="sum-card">
             <p class="micro">${it.label}</p>
-            <p style="font-size:19px;font-weight:700;margin-top:7px;color:var(--tx);line-height:1.2;">${it.value}</p>
+            <p style="font-size:18px;font-weight:700;margin-top:7px;color:var(--tx);line-height:1.2;">${it.value}</p>
             ${it.subtext ? `<p style="font-size:11px;color:var(--tx2);margin-top:4px;">${it.subtext}</p>` : ""}
           </div>`).join("");
   };
   const renderTable = (rows = []) => {
-    if (!rows.length) { tblWrap.style.display = "none"; tblEmpty.style.display = "block"; return; }
+    if (!rows.length) { tblCard.style.display = "none"; return; }
     const cols = Array.from(rows.reduce((s, r) => { Object.keys(r).forEach(k => s.add(k)); return s; }, new Set()));
     tblWrap.innerHTML = `
       <table class="tv-tbl">
         <thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
         <tbody>${rows.map(row => `<tr>${cols.map(c => `<td>${row[c] ?? "-"}</td>`).join("")}</tr>`).join("")}</tbody>
       </table>`;
-    tblWrap.style.display = "block"; tblEmpty.style.display = "none";
+    tblCard.style.display = "block";
+    tblOpen = false; tblWrap.style.display = "none";
+    document.getElementById("tbl-icon").style.transform = "";
   };
 
-  const dsDef = (type, ds) => ({
-    label: ds.label, data: ds.data,
-    borderColor: ds.borderColor || ds.backgroundColor || "#2962ff",
-    backgroundColor: ds.backgroundColor || ds.borderColor || "#2962ff",
-    tension: type === "line" ? 0.28 : 0, borderWidth: 2, fill: false,
-  });
+  /* ── CHART HELPERS ── */
+  const probColor = label => {
+    const l = String(label);
+    if (l.includes("상승")) return "rgba(8,153,129,.85)";
+    if (l.includes("하락")) return "rgba(242,54,69,.85)";
+    return "rgba(178,181,190,.8)";
+  };
+  const dsDef = (type, ds, labels) => {
+    const isProb = ds.label === "Probability" || ds.label === "확률";
+    return {
+      label: ds.label, data: ds.data,
+      borderColor: ds.borderColor || ds.backgroundColor || "#2962ff",
+      backgroundColor: isProb && labels
+        ? labels.map(l => probColor(l))
+        : (ds.backgroundColor || ds.borderColor || "rgba(41,98,255,.75)"),
+      tension: type === "line" ? 0.28 : 0, borderWidth: 2, fill: false,
+      pointRadius: type === "line" ? 0 : undefined,
+    };
+  };
   const renderCharts = (cfgs = []) => {
     chartArea.innerHTML = ""; charts.forEach(c => c.destroy()); charts = [];
-    if (!cfgs.length) { chartArea.innerHTML = `<div style="padding:18px;font-size:13px;color:var(--tx2);border:1px solid var(--ln);border-radius:8px;grid-column:1/-1;">차트 데이터가 아직 없습니다.</div>`; return; }
+    if (!cfgs.length) return;
     cfgs.forEach((cfg, i) => {
+      const isFullWidth = cfgs.length === 1;
       const card = document.createElement("div");
-      card.style.cssText = "border:1px solid var(--ln);border-radius:8px;padding:13px;background:var(--s2);";
+      card.style.cssText = `border:1px solid var(--ln);border-radius:8px;padding:13px;background:var(--s2);${isFullWidth?"grid-column:1/-1;":""}`;
+      const h = cfg.type === "line" && (cfg.labels||[]).length > 20 ? 300 : 240;
       card.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <span style="font-size:12px;font-weight:600;color:var(--tx);">${cfg.title||`Chart ${i+1}`}</span>
-          <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;">${cfg.type||"line"}</span>
+          <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;">${cfg.type||"line"}</span>
         </div>
-        <canvas id="chart-${i}" height="200"></canvas>`;
+        <div style="position:relative;height:${h}px;">
+          <canvas id="chart-${i}"></canvas>
+        </div>`;
       chartArea.appendChild(card);
       charts.push(new Chart(card.querySelector("canvas"), {
         type: cfg.type || "line",
-        data: { labels: cfg.labels||[], datasets: (cfg.datasets||[]).map(ds => dsDef(cfg.type||"line", ds)) },
+        data: { labels: cfg.labels||[], datasets: (cfg.datasets||[]).map(ds => dsDef(cfg.type||"line", ds, cfg.labels)) },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: "#787b86", font: { size: 11 } } } },
+          plugins: { legend: { labels: { color:"#787b86", font:{size:11} } } },
           scales: {
-            x: { ticks: { color: "#b2b5be", maxRotation: 0, autoSkip: true, font: { size: 10 } }, grid: { color: "rgba(0,0,0,.05)" } },
-            y: { ticks: { color: "#b2b5be", font: { size: 10 } }, grid: { color: "rgba(0,0,0,.05)" } },
+            x: { ticks:{color:"#b2b5be",maxRotation:0,autoSkip:true,font:{size:10}}, grid:{color:"rgba(0,0,0,.05)"} },
+            y: { beginAtZero:true, ticks:{color:"#b2b5be",font:{size:10}}, grid:{color:"rgba(0,0,0,.05)"} },
           },
         },
       }));
@@ -800,7 +942,7 @@
       const probs = parseProbs(data.probabilities);
       return { summary:[{label:"Ticker",value:data.ticker||"-"},{label:"Model",value:data.model_type||"-"},{label:"CV Accuracy",value:data.cv_mean!==undefined?`${(data.cv_mean*100).toFixed(2)}%`:"-",subtext:data.cv_std!==undefined?`±${(data.cv_std*100).toFixed(2)}% (5-fold)`:""},{label:"Hold-out Acc",value:data.accuracy!==undefined?`${(data.accuracy*100).toFixed(2)}%`:"-"},{label:"Signal",value:flat(data.signal)}],
         notes:[data.mongo_id?`Mongo ID: ${data.mongo_id}`:"Mongo 저장 없음",`${action.toUpperCase()} 추론 완료`],
-        charts:probs.length?[{title:`${action.toUpperCase()} Probability`,type:"bar",labels:probs.map(p=>p.label),datasets:[{label:"Probability",data:probs.map(p=>p.value),backgroundColor:action==="ml"?"#2962ff":"#a855f7"}]}]:[],
+        charts:probs.length?[{title:`${action.toUpperCase()} 확률 분포`,type:"bar",labels:probs.map(p=>p.label),datasets:[{label:"확률",data:probs.map(p=>p.value)}]}]:[],
         table:Object.entries(data).map(([k,v])=>({field:k,value:flat(v)})) };
     }
     if (action === "forecast") {
@@ -814,37 +956,40 @@
     return { summary:[{label:"Status",value:"Completed"}], notes:[JSON.stringify(data)], charts:[], table:[data] };
   };
 
-  /* ── CLEAR MODAL ── */
-  const clearModal = () => {
-    sumGrid.innerHTML=""; logList.innerHTML=""; chartArea.innerHTML="";
-    tblWrap.innerHTML=""; tblWrap.style.display="none"; tblEmpty.style.display="block";
-    charts.forEach(c=>c.destroy()); charts=[];
-    tabBtns.forEach(b=>b.classList.remove("active")); tabBtns[0].classList.add("active");
-    Object.values(tabPanels).forEach(p=>p.style.display="none"); tabPanels.summary.style.display="block";
+  /* ── SHOW RESULT AREA ── */
+  const showResults = (title, endpoint) => {
+    document.getElementById("initial-card").style.display = "none";
+    const panels = document.getElementById("result-panels");
+    panels.style.display = "block";
+    document.getElementById("result-title").textContent = title;
+    document.getElementById("result-endpoint").textContent = endpoint;
+  };
+  const clearResults = () => {
+    sumGrid.innerHTML = ""; chartArea.innerHTML = "";
+    tblWrap.innerHTML = ""; tblCard.style.display = "none";
+    charts.forEach(c => c.destroy()); charts = [];
+    tblOpen = false;
   };
 
   /* ── RUN REQUEST ── */
   const runRequest = async (action, endpoint, payload=null, method="POST") => {
     setPill(statusPill, "실행 중", "warn");
-    modalTitle.textContent = action.toUpperCase();
-    modalSub.textContent   = `${method} ${endpoint}`;
-    setPill(modalStat, "실행 중", "warn");
-    clearModal(); openModal();
+    showResults(action.toUpperCase(), `${method} ${endpoint}`);
+    clearResults();
     const opts = { method, headers:{"Content-Type":"application/json"} };
     if (payload && method!=="GET") opts.body = JSON.stringify(payload);
     const res  = await fetch(`${API_BASE}${endpoint}`, opts);
     const data = await res.json();
     if (!res.ok) throw new Error(typeof data.detail==="string" ? data.detail : JSON.stringify(data.detail||data));
     const n = normalize(action, data);
-    renderSummary(n.summary); renderLog(n.notes); renderCharts(n.charts); renderTable(n.table);
-    setPill(modalStat,"완료","ok"); setPill(statusPill,"완료","ok");
+    renderSummary(n.summary); renderCharts(n.charts); renderTable(n.table);
     renderNotes(n.notes);
+    setPill(statusPill, "완료", "ok");
     return data;
   };
 
   /* ── GETTERS ── */
   const getC = () => ({ ticker:document.getElementById("ticker").value.trim()||"005930", tickers:document.getElementById("tickers").value.split(",").map(v=>v.trim()).filter(Boolean), source:document.getElementById("source").value, market:document.getElementById("market").value, pages:Number(document.getElementById("pages").value||40), period:document.getElementById("period").value.trim()||"5y", seq_len:Number(document.getElementById("seq_len").value||20), n_clusters:Number(document.getElementById("n_clusters").value||3) });
-  const getM = () => ({ username:document.getElementById("mongo-user").value.trim(), password:document.getElementById("mongo-pass").value, role:document.getElementById("mongo-role").value.trim()||"user", deleteType:document.getElementById("mongo-delete-type").value, deleteId:document.getElementById("mongo-delete-id").value.trim() });
 
   /* ── ACTIONS ── */
   const actions = {
@@ -852,25 +997,33 @@
     cluster:  ()=>{const c=getC();return runRequest("cluster", "/api/webapp/cluster",         {tickers:c.tickers,source:c.source,pages:Math.min(c.pages,20),n_clusters:c.n_clusters,method:"kmeans"});},
     ml:       ()=>{const c=getC();return runRequest("ml",      "/api/webapp/ml-predict",      {ticker:c.ticker,source:c.source,pages:Math.max(c.pages,30),period:c.period,model_type:"rf",forward_days:5,threshold:0.01});},
     dl:       ()=>{const c=getC();return runRequest("dl",      "/api/webapp/dl-predict",      {ticker:c.ticker,source:c.source,pages:Math.max(c.pages,30),period:c.period,model_type:"auto",seq_len:c.seq_len,forward_days:5,threshold:0.01,epochs:20});},
-    forecast: ()=>{const c=getC();return runRequest("forecast","/api/webapp/stock-forecast",  {ticker:c.ticker,source:c.source,pages:Math.min(c.pages,30),period:"1y"});},
-    "mongo-create-user":   ()=>{const m=getM();return runRequest("mongo-create-user",  "/api/mongo/users",           {username:m.username,password:m.password,role:m.role});},
-    "mongo-login":         ()=>{const m=getM();return runRequest("mongo-login",        "/api/mongo/auth/login",      {username:m.username,password:m.password});},
-    "mongo-list-users":    ()=>runRequest("mongo-list-users",   "/api/mongo/users?limit=20",   null,"GET"),
-    "mongo-list-crawls":   ()=>runRequest("mongo-list-crawls",  "/api/mongo/crawls?limit=20",  null,"GET"),
-    "mongo-list-analyses": ()=>runRequest("mongo-list-analyses","/api/mongo/analyses?limit=20",null,"GET"),
-    "mongo-delete-doc":    ()=>{const m=getM();if(!m.deleteId)throw new Error("삭제할 ID를 입력하세요.");return runRequest("mongo-delete-doc",`/api/mongo/${m.deleteType}/${m.deleteId}`,null,"DELETE");},
+    forecast: ()=>{
+      const ticker = (document.getElementById("forecast-ticker")||{value:""}).value.trim() || document.getElementById("ticker").value.trim() || "005930";
+      const source = (document.getElementById("forecast-source")||{value:"naver"}).value;
+      const pages  = Number((document.getElementById("forecast-pages")||{value:15}).value || 15);
+      return runRequest("forecast","/api/webapp/stock-forecast", {ticker, source, pages, period:"1y"});
+    },
   };
 
   const handle = key => async () => {
     try { await actions[key](); }
     catch(err) {
-      setPill(statusPill,"실패","fail"); setPill(modalStat,"실패","fail");
-      renderSummary([{label:"Error",value:"Request Failed"}]);
-      renderLog([String(err.message||err)]); renderNotes([String(err.message||err)]); openModal();
+      setPill(statusPill, "실패", "fail");
+      renderSummary([{label:"Error", value:"Request Failed"}]);
+      renderNotes([String(err.message||err)]);
     }
   };
   document.querySelectorAll("[data-action]").forEach(b => b.addEventListener("click", handle(b.dataset.action)));
-  document.querySelectorAll("[data-mongo-action]").forEach(b => b.addEventListener("click", handle(b.dataset.mongoAction)));
+
+  /* Forecast quick button: open panel scrolled to forecast section */
+  const fqBtn = document.getElementById("forecast-quick-btn");
+  if (fqBtn) fqBtn.addEventListener("click", () => {
+    openOC();
+    setTimeout(() => {
+      const el = document.getElementById("forecast-ticker");
+      if (el) el.closest("section")?.scrollIntoView({behavior:"smooth", block:"center"});
+    }, 300);
+  });
 
   /* ── SERVICE HEALTH ── */
   const setNavDot = (dotId, lblId, ok, lbl) => {
@@ -881,12 +1034,9 @@
   const checkServices = async () => {
     try { const r=await fetch(`${API_BASE}/health`); setNavDot("flask-dot","flask-lbl",r.ok,r.ok?"Flask Online":"Flask Offline"); }
     catch { setNavDot("flask-dot","flask-lbl",false,"Flask 오프라인"); }
-    try { const r=await fetch(`${API_BASE}/api/mongo/health`); mongoReady=r.ok; setNavDot("mongo-dot","mongo-lbl",r.ok,r.ok?"MongoDB 연결됨":"MongoDB 미연결"); }
-    catch { mongoReady=false; setNavDot("mongo-dot","mongo-lbl",false,"MongoDB 미연결"); }
-    document.querySelectorAll("[data-mongo-action]").forEach(b=>{b.disabled=!mongoReady;});
-    renderNotes(mongoReady
-      ? ["서비스가 정상 연결되었습니다.","메뉴에서 분석을 선택해 실행하세요.","Mongo CRUD 버튼이 활성화되었습니다."]
-      : ["MongoDB가 연결되지 않아 CRUD 버튼은 비활성화됩니다.",`Airflow UI: ${AIRFLOW_URL}`]);
+    try { const r=await fetch(`${API_BASE}/api/mongo/health`); setNavDot("mongo-dot","mongo-lbl",r.ok,r.ok?"MongoDB 연결됨":"MongoDB 미연결"); }
+    catch { setNavDot("mongo-dot","mongo-lbl",false,"MongoDB 미연결"); }
+    renderNotes(["서비스 상태를 확인했습니다.", "왼쪽 메뉴에서 분석을 선택해 실행하세요.", `Airflow UI: ${AIRFLOW_URL}`]);
   };
   checkServices();
 </script>
