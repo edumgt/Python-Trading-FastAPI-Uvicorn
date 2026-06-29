@@ -411,8 +411,109 @@ trading/
 - Airflow는 공식 `apache/airflow` 이미지를 사용하며 로컬 개발용 `standalone` 모드로 실행됩니다.
 - ML·DL·Forecast 기능은 `yfinance` 소스 선택 시 Yahoo Finance 경로로 정상 동작합니다. Naver Finance 크롤링은 해당 도메인 접근이 가능한 환경에서만 수집됩니다.
 
+---
 
---- 
+## <i class="fa-brands fa-aws"></i> AWS SageMaker Canvas 연동
+
+로컬 ML/DL 모델 외에 **AWS SageMaker Canvas** 노코드 AutoML을 연동할 수 있습니다.  
+Canvas는 코드 없이 UI에서 모델을 학습하고, 학습된 모델을 AWS 실시간 엔드포인트로 배포해  
+Flask API(`/api/webapp/canvas-predict`)에서 호출하는 방식입니다.
+
+### 전체 흐름
+
+```
+로컬 크롤링 → 피처 CSV → S3 업로드 → Canvas UI 학습 → SageMaker 엔드포인트 → Flask API
+```
+
+### 필요한 AWS 권한
+
+| IAM 정책 | 용도 |
+|---|---|
+| `AmazonSageMakerFullAccess` | Studio 도메인, Canvas, 엔드포인트 관리 |
+| `AmazonS3FullAccess` | 학습 데이터 S3 업로드/다운로드 |
+| `AmazonForecastFullAccess` | Canvas 내부 시계열 모델 사용 시 |
+
+### Canvas 학습 데이터 스키마 (21개 피처)
+
+| 컬럼 | 유형 | 설명 |
+|---|---|---|
+| `Returns` | NUMERIC | 당일 수익률 |
+| `MA5_Ratio` ~ `MA60_Ratio` | NUMERIC | 이동평균 비율 (5/20/60일) |
+| `MACD`, `MACD_Signal`, `MACD_Hist` | NUMERIC | MACD 지표 |
+| `RSI14` | NUMERIC | RSI 14일 (0~100) |
+| `Stoch_K`, `Stoch_D` | NUMERIC | 스토캐스틱 |
+| `Williams_R` | NUMERIC | Williams %R |
+| `BB_Width`, `BB_Position` | NUMERIC | 볼린저 밴드 |
+| `ATR14`, `Volatility` | NUMERIC | 변동성 지표 |
+| `Volume_Change`, `Volume_MA_Ratio`, `OBV_Change` | NUMERIC | 거래량 지표 |
+| `Momentum_5`, `Momentum_20` | NUMERIC | 5일/20일 모멘텀 |
+| **`Signal`** | **TEXT** | **타깃: `BUY` / `SELL` / `HOLD`** |
+
+> 상세 스키마: [`sagemaker/data/feature_schema.md`](sagemaker/data/feature_schema.md)
+
+### 단계별 AWS CLI 실행
+
+```bash
+# 1. AWS 환경 설정 (IAM 역할, S3 버킷 생성)
+bash sagemaker/01_setup_env.sh
+
+# 2. OHLCV 크롤링 → 피처 CSV 생성 → S3 업로드
+#    (기본: 삼성전자 005930, 40페이지)
+bash sagemaker/02_prepare_data.sh 005930 40
+
+# 3. SageMaker Studio Domain / Canvas 앱 생성 + 접속 URL 출력
+bash sagemaker/03_create_domain.sh
+#    → 브라우저에서 Canvas UI 열기
+#    → Datasets에서 s3://버킷/canvas/train/ 로드
+#    → Signal 컬럼을 Target으로 지정 후 Standard build 학습
+
+# 4. Canvas 학습 완료 후 엔드포인트 배포
+bash sagemaker/04_deploy_endpoint.sh
+
+# 5. 엔드포인트 호출 테스트
+bash sagemaker/05_invoke_endpoint.sh 005930
+
+# 6. Flask API 연동 테스트
+python3 sagemaker/06_integrate_flask.py 005930
+
+# 7. 사용 후 리소스 정리 (과금 차단 — 반드시 실행)
+bash sagemaker/07_cleanup.sh
+```
+
+### Flask API 연동 포인트
+
+`sagemaker/06_integrate_flask.py`의 `FLASK_ROUTE_CODE`를 `flask_api/app.py`에 추가하면  
+`POST /api/webapp/canvas-predict` 엔드포인트가 활성화됩니다.
+
+```bash
+# 호출 예시
+curl -X POST http://localhost:5000/api/webapp/canvas-predict \
+     -H "Content-Type: application/json" \
+     -d '{"ticker":"005930","pages":5}'
+
+# 응답 예시
+{
+  "ticker": "005930",
+  "signal": "BUY",
+  "probabilities": {"BUY": 0.621, "SELL": 0.183, "HOLD": 0.196},
+  "model_type": "canvas",
+  "endpoint": "alphastation-canvas-endpoint"
+}
+```
+
+### 예상 비용 (서울 리전, ap-northeast-2)
+
+| 항목 | 단가 | 비고 |
+|---|---|---|
+| S3 (학습 데이터 ~50MB) | ~$0/월 | 프리 티어 포함 |
+| Canvas 세션 | $1.90/시간 | UI 학습 시간만 과금 |
+| ml.m5.large 엔드포인트 | $0.134/시간 | 상시 → 월 ~$97 |
+| ml.m5.large 엔드포인트 | $0.134/시간 | 필요 시만 (10h) → ~$1.3 |
+
+> ⚠️ **엔드포인트는 사용 후 반드시 `07_cleanup.sh`로 삭제**하세요.  
+> 개발 테스트 목적이라면 엔드포인트 상시 운영 대신 **Batch Transform** 또는 **로컬 ML**을 사용하세요.
+
+---
 
 ### docker 포트 사용 시 주의
 
