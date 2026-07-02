@@ -6,6 +6,109 @@
 
 ---
 
+# 🗺️ 길 찾기 비유로 이해하는 딥러닝 (노드와 가중치)
+
+딥러닝이 최적의 정답을 찾아가는 과정은 복잡하게 얽힌 길(네트워크)에서 가장 빠르고 정확한 **지름길(최적의 경로)을 개척하는 과정**과 매우 흡사합니다.
+
+---
+
+## 📍 길 찾기 비유로 보는 딥러닝 핵심 개념
+
+| 딥러닝 개념 | 길 찾기 비유 | 역할 설명 |
+| :--- | :--- | :--- |
+| **노드 (Node / 인공뉴런)** | **교차로 / 환승역** | 정보가 모이고 다음 길로 갈라지는 변곡점입니다. 앞길에서 온 자극들을 모아 다음 목적지로 보낼지 말지 결정합니다. |
+| **가중치 (Weight)** | **도로의 상태 (포장도로 vs 진흙길)** | 특정 교차로와 교차로 사이를 잇는 **길의 퀄리티(중요도)**입니다. 지름길이나 아스팔트 길은 가중치가 높고, 막히는 길이나 자갈길은 가중치가 낮아집니다. |
+| **편향 (Bias)** | **기본적인 이동 성향** | 묻지도 따지지도 않고 특정 방향으로 가려는 내비게이션의 기본 성향이나 기본 속도입니다. |
+| **학습 (Training)** | **시행착오를 통한 내비게이션 업데이트** | 처음에는 길을 몰라 헤매다가(오차 발생), 여러 번 다녀보면서 "아, 이 길(가중치)이 제일 빠르네!" 하고 알아내는 과정입니다. |
+
+---
+
+## 🔄 딥러닝이 지름길을 찾아가는 3단계 과정
+
+### 1. 출발 (순전파 - Forward Propagation)
+처음에는 내비게이션(인공지능)도 초행길이라 어떤 길이 좋은지 모릅니다. 그래서 무작위로 아무 교차로(노드)나 찍고, 아무 길(가중치)이나 골라서 목적지까지 가봅니다. 당연히 처음엔 엄청 지각하거나 길을 헤매게 됩니다.
+
+### 2. 도착 후 반성 (손실 함수 - Loss Function)
+목적지에 도착한 뒤, *"예상 시간보다 1시간이나 늦었네!"* 하고 얼마나 헤맸는지 **오차(틀린 정도)**를 계산합니다.
+
+### 3. 길 수정하기 (역전파 - Backpropagation)
+다시 출발지로 거슬러 올라가면서 도로 표지판을 고칩니다. 
+* *"아까 그 자갈길은 다신 가지 말자 (가중치 낮추기)"*
+* *"이 터널로 지나가니까 엄청 빠르네 (가중치 높이기)"*
+
+> 💡 **결론**
+> 이 과정을 수백만 번 반복하다 보면, 딥러닝 네트워크 안에 **최적의 가중치 조합(가장 빠른 초고속 고속도로 네트워크)**이 완성됩니다. 즉, 최적의 지름길 지도를 그리는 것이 딥러닝의 본질입니다.
+
+---
+
+## 🧩 이 저장소에서 노드·가중치가 실제로 구현된 코드
+
+위 비유가 이 프로젝트 안에서 어떻게 "실제 코드"로 나타나는지 두 곳에서 확인할 수 있습니다.
+
+### 1) [`trading/dl_strategy.py`](trading/dl_strategy.py) — Keras `Sequential` 모델 (교차로를 쌓아 만든 고속도로망)
+
+`LSTMStrategy._build_model()`이 만드는 신경망 하나하나의 층(layer)이 곧 "교차로 묶음"이고, 층과 층 사이를 잇는 가중치 행렬이 "도로"입니다.
+
+```python
+model = keras.Sequential([
+    keras.layers.Input(shape=(self.seq_len, n_features)),   # 출발점: 20일치 x 20개 지표 = 입력 교차로 묶음
+    keras.layers.LSTM(64, return_sequences=True),           # 64개 노드짜리 1차 교차로 지대
+    keras.layers.Dropout(0.2),                               # 일부 길을 무작위로 폐쇄 → 특정 지름길에만 의존하지 않도록(과적합 방지)
+    keras.layers.LSTM(32),                                   # 32개 노드짜리 2차 교차로 지대(더 압축된 경로 요약)
+    keras.layers.Dropout(0.2),
+    keras.layers.Dense(16, activation="relu"),               # 16개 교차로, 목적지 근처 국도
+    keras.layers.Dense(3, activation="softmax"),              # 최종 3갈래 길: SELL / HOLD / BUY
+])
+```
+
+| 비유 | 코드 대응 |
+| :--- | :--- |
+| 교차로(노드) | `LSTM(64)`, `LSTM(32)`, `Dense(16)` 각 층의 유닛(unit) 개수 |
+| 도로(가중치) | 각 층 내부에 자동 생성되는 `kernel`/`recurrent_kernel` 행렬 (Keras가 랜덤 초기화 후 학습으로 값을 갱신) |
+| 기본 이동 성향(편향) | 각 층의 `bias` 벡터 |
+| 순전파 | `model.predict(...)` — 학습된 가중치로 입력→출력까지 한 번에 흘려보내 SELL/HOLD/BUY 확률을 계산 |
+| 손실 함수 | `loss="sparse_categorical_crossentropy"` — 예측 확률과 실제 라벨(하락/보합/상승) 사이의 오차 |
+| 역전파 + 길 수정 | `model.fit()` 내부에서 `keras.optimizers.Adam(learning_rate=1e-3)`이 오차를 거슬러 올라가며 각 가중치를 갱신 |
+| 시행착오 반복 횟수 | `epochs=30` — 출발~반성~수정을 최대 30번 반복 |
+| "더 헤매도 소용없으면 그만 찾기" | `keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True)` — 검증 손실이 5번 연속 개선되지 않으면 조기 종료하고, 가장 성능이 좋았던 가중치로 복원 |
+
+TensorFlow가 없는 환경에서는 `MLPStrategy`(`sklearn.neural_network.MLPClassifier`, `hidden_layer_sizes=(128, 64, 32)`)가 동일한 역할을 하는 폴백으로 동작합니다. 이때도 128→64→32개의 노드를 가진 은닉층 3개가 순서대로 쌓여 같은 구조의 "교차로망"을 형성합니다.
+
+### 2) [`trading/webapp_analytics.py`](trading/webapp_analytics.py) — 넘파이로 직접 짠 Self-Attention (가중치를 눈으로 확인 가능한 코드)
+
+`MultiHeadAttention` 클래스는 Keras처럼 가중치를 숨기지 않고, 도로(가중치) 행렬을 코드에서 그대로 변수로 노출합니다.
+
+```python
+@dataclass
+class MultiHeadAttention:
+    def __post_init__(self) -> None:
+        rng = np.random.default_rng(self.seed)
+        head_dim = self.d_model // self.n_heads
+        self.wq = rng.normal(0, 0.05, (self.n_heads, self.d_model, head_dim))  # "질문"용 도로
+        self.wk = rng.normal(0, 0.05, (self.n_heads, self.d_model, head_dim))  # "비교 기준"용 도로
+        self.wv = rng.normal(0, 0.05, (self.n_heads, self.d_model, head_dim))  # "실제 정보"를 나르는 도로
+        self.wo = rng.normal(0, 0.05, (self.d_model, self.d_model))            # 도착 후 정리하는 도로
+
+    def forward(self, x: np.ndarray) -> tuple[np.ndarray, list[np.ndarray]]:
+        for h in range(self.n_heads):
+            q = x @ self.wq[h]
+            k = x @ self.wk[h]
+            v = x @ self.wv[h]
+            weights = _softmax((q @ k.T) / np.sqrt(head_dim))   # 어느 과거 시점(교차로)이 더 중요한지 확률로 환산
+            ...
+```
+
+| 비유 | 코드 대응 |
+| :--- | :--- |
+| 교차로(노드) | 시계열의 각 시점(최근 N거래일)이 하나의 노드 역할 |
+| 도로(가중치) | `wq`, `wk`, `wv`, `wo` — 명시적인 넘파이 행렬. 값이 클수록 그 경로(시점 간 관계)의 중요도가 높다는 뜻 |
+| 도로의 혼잡도 계산 | `_softmax((q @ k.T) / np.sqrt(head_dim))` — 모든 시점 쌍의 "연결 강도"를 확률(합=1)로 정규화한 것이 바로 어텐션 가중치 |
+| 순전파 | `forward()` 메서드 — 이 저장소 안에서 유일하게 "forward"라는 이름을 그대로 가진 함수 |
+
+`trading/dl_strategy.py`가 학습(가중치를 갱신하는) 쪽을 담당한다면, 이 파일의 어텐션 함수들(`_self_attention_1d`, `_transformer_encode`, `MultiHeadAttention`)은 **고정된 가중치로 순전파만 수행해 "어느 과거 날짜가 오늘 예측에 가장 큰 영향을 주는 도로였는지"를 시각화**하는 교육용 코드입니다. Flask API의 학습 콘텐츠(`attention_report`, `sequence_lstm` 관련 리포트)에서 이 결과를 그대로 프론트엔드 차트로 내려줍니다.
+
+---
+
 ## <i class="fa-solid fa-clipboard-list"></i> 프로젝트 시작 전 체크리스트
 
 > 이 프로젝트를 원활하게 진행하기 위해 아래 항목을 사전에 확인하세요.
