@@ -67,7 +67,13 @@ services:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       FLASK_API_BASE_URL: http://flask-api:5000
       PYTHONPATH: /opt/airflow/project
-      _PIP_ADDITIONAL_REQUIREMENTS: pymongo requests beautifulsoup4 lxml yfinance pandas numpy scikit-learn scipy joblib xgboost
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ECOS_API_KEY: ${ECOS_API_KEY:-}
+      DELTA_BASE_PATH: ${DELTA_BASE_PATH:-/opt/airflow/project/data/delta}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      _PIP_ADDITIONAL_REQUIREMENTS: pymongo requests beautifulsoup4 lxml yfinance pandas numpy scikit-learn scipy joblib xgboost "kafka-python<3.0.0" pyspark delta-spark boto3
     ports:
     - 8180:8080
     volumes:

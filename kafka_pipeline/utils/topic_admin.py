@@ -1,9 +1,9 @@
 """Kafka AdminClient를 사용한 토픽 생성/관리 유틸리티.
 
 Usage:
-    python -m kafka.utils.topic_admin --create-all
-    python -m kafka.utils.topic_admin --list
-    python -m kafka.utils.topic_admin --delete stock.raw.prices
+    python -m kafka_pipeline.utils.topic_admin --create-all
+    python -m kafka_pipeline.utils.topic_admin --list
+    python -m kafka_pipeline.utils.topic_admin --delete stock.raw.prices
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from kafka import KafkaAdminClient
 from kafka.admin import NewTopic
 from kafka.errors import TopicAlreadyExistsError
 
-from kafka.config.kafka_config import (
+from kafka_pipeline.config.kafka_config import (
     BOOTSTRAP_SERVERS,
     MIN_INSYNC_REPLICAS,
     PARTITION_CONFIG,
@@ -39,6 +39,9 @@ def build_new_topic(topic_name: str) -> NewTopic:
     # raw 토픽은 24시간만 보관 (용량 절약)
     if topic_name == Topics.RAW_PRICES:
         topic_configs["retention.ms"] = str(24 * 60 * 60 * 1000)
+    # 공공데이터(거시지표)는 저빈도 수집이므로 30일 보관
+    if topic_name == Topics.PUBLIC_MACRO:
+        topic_configs["retention.ms"] = str(30 * 24 * 60 * 60 * 1000)
 
     return NewTopic(
         name=topic_name,
@@ -56,6 +59,7 @@ def create_all_topics() -> None:
         Topics.FILTERED,
         Topics.ALERTS,
         Topics.AGGREGATED,
+        Topics.PUBLIC_MACRO,
     ]
     new_topics = [build_new_topic(t) for t in all_topics]
     try:

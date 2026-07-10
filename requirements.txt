@@ -19,11 +19,17 @@ joblib>=1.3.0
 xgboost>=2.0.0
 
 # ── Kafka 이벤트 파이프라인 ──────────────────────────
-kafka-python>=2.0.2          # Kafka Producer / Consumer
+# 주의: kafka-python 3.x는 별도 포크로 kafka.errors API가 달라 호환 안 됨 → 2.x 고정
+kafka-python>=2.0.2,<3.0.0   # Kafka Producer / Consumer
 faust-streaming>=0.10.14     # Kafka Streams (Python 구현체)
 
 # ── Spark 연동 (선택) ────────────────────────────────
 # pyspark>=3.5.0             # Spark Structured Streaming (Docker 또는 로컬 Spark)
+
+# ── 공공데이터 API + Delta Lake 배치 적재 (선택) ──────
+# pyspark>=3.5.0              # kafka_pipeline/spark/spark_kafka_to_delta.py 실행 시 필요
+# delta-spark>=3.2.0          # Delta Lake 테이블 포맷
+boto3>=1.34.0                 # AWS S3 적재/조회
 
 # ── Optional for LSTM deep learning mode ─────────────
 # tensorflow>=2.15.0

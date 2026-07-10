@@ -160,6 +160,46 @@ class StockAlertEvent:
 
 
 @dataclass
+class EcosMacroEvent:
+    """public.ecos.macro 토픽의 메시지 스키마.
+
+    한국은행 ECOS(경제통계시스템) OpenAPI — 공공데이터 API 수집 결과.
+    파티션 키: stat_code (통계표 코드)
+    """
+    stat_code: str         # 통계표 코드 (e.g. "722Y001" 기준금리)
+    stat_name: str         # 통계 항목명
+    item_code1: str        # 세부 항목 코드
+    item_name1: str        # 세부 항목명
+    cycle: str             # 주기 ("D" 일, "M" 월, "Q" 분기, "A" 연)
+    time: str              # 통계 시점 (주기별 포맷, e.g. "202506")
+    value: float           # 통계값
+    unit_name: str         # 단위 (e.g. "%", "원")
+    source: str = "ecos"
+    collected_at: str = field(default_factory=_now_iso)
+
+    def to_json(self) -> bytes:
+        return json.dumps(asdict(self), ensure_ascii=False).encode("utf-8")
+
+    @classmethod
+    def from_json(cls, data: bytes | str) -> "EcosMacroEvent":
+        return cls(**json.loads(data))
+
+    @classmethod
+    def from_ecos_row(cls, stat_code: str, row: dict) -> "EcosMacroEvent":
+        """ECOS StatisticSearch API 응답 row(dict)에서 변환."""
+        return cls(
+            stat_code=stat_code,
+            stat_name=row.get("STAT_NAME", ""),
+            item_code1=row.get("ITEM_CODE1", ""),
+            item_name1=row.get("ITEM_NAME1", ""),
+            cycle=row.get("CYCLE", ""),
+            time=row.get("TIME", ""),
+            value=float(row.get("DATA_VALUE", 0) or 0),
+            unit_name=row.get("UNIT_NAME", ""),
+        )
+
+
+@dataclass
 class OHLCVAggregation:
     """stock.aggregated.ohlcv 토픽 메시지 (1분 윈도우 집계)."""
     symbol: str

@@ -11,6 +11,7 @@
 8. [Apache NiFi 연동](#8-apache-nifi-연동)
 9. [인프라 실행 가이드](#9-인프라-실행-가이드)
 10. [메시지 스키마 레퍼런스](#10-메시지-스키마-레퍼런스)
+11. [공공데이터 API → Kafka → PySpark → Delta Lake(S3) 배치 파이프라인](#11-공공데이터-api--kafka--pyspark--delta-lakes3-배치-파이프라인)
 
 ---
 
@@ -39,7 +40,7 @@
          │               │              │
          └───────────────▼──────────────┘
                    ┌─────────────┐
-                   │   Producer  │  kafka/producer/stock_producer.py
+                   │   Producer  │  kafka_pipeline/producer/stock_producer.py
                    │  (파티션 키: │
                    │   종목 심볼)  │
                    └─────┬───────┘
@@ -115,7 +116,7 @@ Consumer        (알림 발송)
 ### 2.3 파티션 수 선택 기준
 
 ```python
-# kafka/config/kafka_config.py 참고
+# kafka_pipeline/config/kafka_config.py 참고
 PARTITION_CONFIG = {
     Topics.RAW_PRICES : 6,   # 주요 종목 그룹 수에 맞춤
     Topics.FILTERED   : 3,   # ML 파이프라인 병렬도 (3개 워커)
@@ -165,7 +166,7 @@ PARTITION_CONFIG = {
 ### 3.3 acks 설정과 내구성 트레이드오프
 
 ```python
-# Producer acks 설정 (kafka/config/kafka_config.py)
+# Producer acks 설정 (kafka_pipeline/config/kafka_config.py)
 PRODUCER_CONFIG = {
     "acks": "all",   # 가장 강한 내구성 (리더 + 모든 ISR 확인)
     # "acks": 1     # 리더만 확인 (빠르지만 ISR 복제 전 장애 시 손실 가능)
@@ -177,7 +178,7 @@ PRODUCER_CONFIG = {
 
 ```python
 # 수동 오프셋 커밋으로 at-least-once 보장
-# kafka/consumer/stock_consumer.py
+# kafka_pipeline/consumer/stock_consumer.py
 
 consumer.commit({
     TopicPartition(msg.topic, msg.partition): msg.offset + 1
@@ -199,7 +200,7 @@ consumer.commit({
 
 ### 4.1 파일 위치
 
-[kafka/producer/stock_producer.py](../kafka/producer/stock_producer.py)
+[kafka_pipeline/producer/stock_producer.py](../kafka_pipeline/producer/stock_producer.py)
 
 ### 4.2 주요 설계 포인트
 
@@ -225,14 +226,14 @@ PRODUCER_CONFIG = {
 
 ```bash
 # Daum Finance KOSPI 종목 1회 수집 후 발행
-python -m kafka.producer.stock_producer --source daum --market KOSPI --once
+python -m kafka_pipeline.producer.stock_producer --source daum --market KOSPI --once
 
 # yfinance 미국 주식 30초마다 반복 수집
-python -m kafka.producer.stock_producer --source yfinance \
+python -m kafka_pipeline.producer.stock_producer --source yfinance \
     --symbols AAPL TSLA MSFT NVDA AMZN --interval 30
 
 # Naver Finance KOSDAQ 수집
-python -m kafka.producer.stock_producer --source naver --market KOSDAQ --once
+python -m kafka_pipeline.producer.stock_producer --source naver --market KOSDAQ --once
 ```
 
 ### 4.4 에러 처리 및 재시도
@@ -252,8 +253,8 @@ PRODUCER_CONFIG = {
 
 | 파일 | 역할 |
 |------|------|
-| [kafka/consumer/stock_consumer.py](../kafka/consumer/stock_consumer.py) | ML 파이프라인 + DB 저장 |
-| [kafka/consumer/alert_consumer.py](../kafka/consumer/alert_consumer.py) | 알림 이벤트 처리 |
+| [kafka_pipeline/consumer/stock_consumer.py](../kafka_pipeline/consumer/stock_consumer.py) | ML 파이프라인 + DB 저장 |
+| [kafka_pipeline/consumer/alert_consumer.py](../kafka_pipeline/consumer/alert_consumer.py) | 알림 이벤트 처리 |
 
 ### 5.2 컨슈머 그룹과 파티션 할당
 
@@ -275,16 +276,16 @@ stock.raw.prices (6개 파티션)
 
 ```bash
 # ML 파이프라인 소비자 시작
-python -m kafka.consumer.stock_consumer
+python -m kafka_pipeline.consumer.stock_consumer
 
 # DB 저장 없이 로그만 확인 (테스트)
-python -m kafka.consumer.stock_consumer --dry-run
+python -m kafka_pipeline.consumer.stock_consumer --dry-run
 
 # 처음부터 다시 소비 (재처리)
-python -m kafka.consumer.stock_consumer --from-beginning
+python -m kafka_pipeline.consumer.stock_consumer --from-beginning
 
 # 알림 소비자 (WARNING 이상만)
-python -m kafka.consumer.alert_consumer --severity WARNING
+python -m kafka_pipeline.consumer.alert_consumer --severity WARNING
 ```
 
 ### 5.4 리밸런싱 처리
@@ -304,7 +305,7 @@ python -m kafka.consumer.alert_consumer --severity WARNING
 
 ### 6.1 파일 위치
 
-[kafka/streams/stock_stream_filter.py](../kafka/streams/stock_stream_filter.py)
+[kafka_pipeline/streams/stock_stream_filter.py](../kafka_pipeline/streams/stock_stream_filter.py)
 
 ### 6.2 Faust vs Java Kafka Streams 비교
 
@@ -360,14 +361,14 @@ stock.aggregated.ohlcv
 
 ```bash
 # Faust 워커 시작
-faust -A kafka.streams.stock_stream_filter worker -l info
+faust -A kafka_pipeline.streams.stock_stream_filter worker -l info
 
 # 또는
-python -m kafka.streams.stock_stream_filter worker -l info
+python -m kafka_pipeline.streams.stock_stream_filter worker -l info
 
 # 여러 워커로 병렬 처리 (다른 터미널에서 실행)
-faust -A kafka.streams.stock_stream_filter worker -l info --web-port 6067
-faust -A kafka.streams.stock_stream_filter worker -l info --web-port 6068
+faust -A kafka_pipeline.streams.stock_stream_filter worker -l info --web-port 6067
+faust -A kafka_pipeline.streams.stock_stream_filter worker -l info --web-port 6068
 ```
 
 ### 6.5 상태 관리 — Volume Table
@@ -393,7 +394,7 @@ avg = stats["total"] / stats["count"]
 
 ### 7.1 파일 위치
 
-[kafka/spark/spark_kafka_stream.py](../kafka/spark/spark_kafka_stream.py)
+[kafka_pipeline/spark/spark_kafka_stream.py](../kafka_pipeline/spark/spark_kafka_stream.py)
 
 ### 7.2 Spark Structured Streaming 아키텍처
 
@@ -458,16 +459,16 @@ ohlcv_df = (
 
 ```bash
 # 로컬 모드 (개발)
-python -m kafka.spark.spark_kafka_stream
+python -m kafka_pipeline.spark.spark_kafka_stream
 
 # Docker Spark 클러스터에서 실행
 docker exec spark-master spark-submit \
     --master spark://spark-master:7077 \
     --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \
-    /opt/bitnami/spark/work/kafka/spark/spark_kafka_stream.py
+    /opt/bitnami/spark/work/kafka_pipeline/spark/spark_kafka_stream.py
 
 # Parquet 파일로 저장 (분석용)
-OUTPUT_MODE=parquet python -m kafka.spark.spark_kafka_stream
+OUTPUT_MODE=parquet python -m kafka_pipeline.spark.spark_kafka_stream
 ```
 
 ---
@@ -476,7 +477,7 @@ OUTPUT_MODE=parquet python -m kafka.spark.spark_kafka_stream
 
 ### 8.1 파일 위치
 
-[kafka/nifi/nifi_processor.py](../kafka/nifi/nifi_processor.py)
+[kafka_pipeline/nifi/nifi_processor.py](../kafka_pipeline/nifi/nifi_processor.py)
 
 ### 8.2 NiFi 데이터 플로우 구성
 
@@ -529,13 +530,13 @@ NiFi 없이 동일한 ETL 파이프라인을 Python으로 실행:
 
 ```bash
 # NiFi FlowFile 파이프라인만 시뮬레이션 (Kafka 발행 없음)
-python -m kafka.nifi.nifi_processor --source daum --market KOSPI
+python -m kafka_pipeline.nifi.nifi_processor --source daum --market KOSPI
 
 # NiFi 전체 플로우 시뮬레이션 (Kafka 발행 포함)
-python -m kafka.nifi.nifi_processor --source daum --simulate-nifi-flow
+python -m kafka_pipeline.nifi.nifi_processor --source daum --simulate-nifi-flow
 
 # 60초마다 반복 실행
-python -m kafka.nifi.nifi_processor --source daum --simulate-nifi-flow --interval 60
+python -m kafka_pipeline.nifi.nifi_processor --source daum --simulate-nifi-flow --interval 60
 ```
 
 ---
@@ -582,32 +583,32 @@ docker compose -f docker-compose.yml -f docker-compose.kafka.yml up -d
 docker compose -f docker-compose.kafka.yml ps
 
 # 터미널 2: Faust Streams 워커 시작
-faust -A kafka.streams.stock_stream_filter worker -l info
+faust -A kafka_pipeline.streams.stock_stream_filter worker -l info
 
 # 터미널 3: ML 파이프라인 Consumer 시작
-python -m kafka.consumer.stock_consumer
+python -m kafka_pipeline.consumer.stock_consumer
 
 # 터미널 4: Alert Consumer 시작
-python -m kafka.consumer.alert_consumer --severity WARNING
+python -m kafka_pipeline.consumer.alert_consumer --severity WARNING
 
 # 터미널 5: Producer로 데이터 발행
-python -m kafka.producer.stock_producer --source daum --market KOSPI --once
+python -m kafka_pipeline.producer.stock_producer --source daum --market KOSPI --once
 ```
 
 ### 9.5 토픽 관리
 
 ```bash
 # 모든 토픽 초기 생성
-python -m kafka.utils.topic_admin --create-all
+python -m kafka_pipeline.utils.topic_admin --create-all
 
 # 토픽 목록 확인
-python -m kafka.utils.topic_admin --list
+python -m kafka_pipeline.utils.topic_admin --list
 
 # 토픽 상세 정보 (파티션 수 등)
-python -m kafka.utils.topic_admin --describe stock.raw.prices
+python -m kafka_pipeline.utils.topic_admin --describe stock.raw.prices
 
 # 토픽 삭제 (주의!)
-python -m kafka.utils.topic_admin --delete stock.raw.prices
+python -m kafka_pipeline.utils.topic_admin --delete stock.raw.prices
 ```
 
 ### 9.6 Kafka CLI로 메시지 확인
@@ -711,6 +712,97 @@ kafka-run-class kafka.tools.GetOffsetShell \
 }
 ```
 
+### 10.5 EcosMacroEvent (public.ecos.macro)
+
+```json
+{
+  "stat_code": "722Y001",
+  "stat_name": "한국은행 기준금리",
+  "item_code1": "0101000",
+  "item_name1": "한국은행 기준금리",
+  "cycle": "M",
+  "time": "202606",
+  "value": 3.0,
+  "unit_name": "%",
+  "source": "ecos",
+  "collected_at": "2026-06-01T07:00:00.000+00:00"
+}
+```
+
+---
+
+## 11. 공공데이터 API → Kafka → PySpark → Delta Lake(S3) 배치 파이프라인
+
+기존 실시간 스트리밍(1~10절)과 별개로, 저빈도 공공데이터(거시지표)를 위한
+**Airflow 스케줄 배치** 흐름을 추가로 제공합니다.
+
+```
+한국은행 ECOS OpenAPI (공공데이터)
+       │  (Airflow 매시간 트리거)
+       ▼
+kafka.producer.public_data_producer
+       │  발행
+       ▼
+public.ecos.macro (Kafka 토픽, 파티션 1, 30일 보관)
+       │  Spark Structured Streaming (Trigger.AvailableNow — 배치처럼 실행 후 종료)
+       ▼
+kafka.spark.spark_kafka_to_delta
+       │  append
+       ▼
+Delta Lake 테이블: {DELTA_BASE_PATH}/bronze/macro_indicators
+  (로컬: ./data/delta/... , 운영: s3a://<bucket>/delta/...)
+```
+
+같은 잡이 `stock.aggregated.ohlcv`(7절의 Spark 스트리밍 집계 결과)도
+`{DELTA_BASE_PATH}/bronze/stock_ohlcv` Delta 테이블로 적재합니다.
+
+### 11.1 파일 위치
+
+| 파일 | 역할 |
+|------|------|
+| [kafka_pipeline/producer/public_data_producer.py](../kafka_pipeline/producer/public_data_producer.py) | ECOS 공공데이터 API 수집 → Kafka 발행 |
+| [kafka_pipeline/spark/spark_kafka_to_delta.py](../kafka_pipeline/spark/spark_kafka_to_delta.py) | Kafka → Delta Lake(S3) 배치 적재 |
+| [airflow/dags/public_data_pipeline.py](../airflow/dags/public_data_pipeline.py) | 매시간 수집→적재 오케스트레이션 DAG |
+
+### 11.2 사전 준비
+
+```bash
+# ECOS 공공데이터 API 키 발급: https://ecos.bok.or.kr
+export ECOS_API_KEY=발급받은키
+
+# S3에 적재하려면 (미설정 시 ./data/delta 로컬 경로에 적재됨)
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export DELTA_BASE_PATH=s3a://<bucket>/delta
+```
+
+### 11.3 수동 실행
+
+```bash
+# 1) 공공데이터 수집 → Kafka 발행 (최근 3개월치)
+python -m kafka_pipeline.producer.public_data_producer --once --months 3
+
+# 2) Kafka → Delta Lake 적재
+python -m kafka_pipeline.spark.spark_kafka_to_delta --topic public_macro
+python -m kafka_pipeline.spark.spark_kafka_to_delta --topic ohlcv
+```
+
+### 11.4 Airflow 스케줄
+
+- DAG ID: `public_data_delta_pipeline`
+- 스케줄: `0 * * * *` (매시간 정각)
+- `collect_public_data >> load_macro_to_delta`, `load_ohlcv_to_delta`는 독립 실행
+- Airflow UI(`http://localhost:8180`)에서 DAG를 켜면 즉시 스케줄 적용
+
+### 11.5 적재 확인
+
+```python
+# Delta 테이블 읽기 예시
+from deltalake import DeltaTable
+dt = DeltaTable("./data/delta/bronze/macro_indicators")  # 또는 s3a://... 경로
+df = dt.to_pandas()
+```
+
 ---
 
 ## 관련 파일 구조
@@ -727,7 +819,8 @@ kafka/
 │   └── topic_admin.py           # 토픽 생성/관리 CLI
 ├── producer/
 │   ├── __init__.py
-│   └── stock_producer.py        # 주가 데이터 Kafka 발행
+│   ├── stock_producer.py        # 주가 데이터 Kafka 발행
+│   └── public_data_producer.py  # 공공데이터(ECOS) Kafka 발행
 ├── consumer/
 │   ├── __init__.py
 │   ├── stock_consumer.py        # ML 파이프라인 + DB 저장 소비자
@@ -737,11 +830,17 @@ kafka/
 │   └── stock_stream_filter.py   # Faust 기반 실시간 필터링/집계
 ├── spark/
 │   ├── __init__.py
-│   └── spark_kafka_stream.py    # PySpark Structured Streaming
+│   ├── spark_kafka_stream.py    # PySpark Structured Streaming (실시간 집계)
+│   └── spark_kafka_to_delta.py  # PySpark 배치: Kafka → Delta Lake(S3)
 └── nifi/
     └── nifi_processor.py        # NiFi FlowFile ETL 시뮬레이터
 
+airflow/dags/
+├── trading_pipeline.py          # 평일 매일 18:00 — 크롤링/ML/예측 배치
+└── public_data_pipeline.py      # 매시간 — 공공데이터→Delta Lake 배치
+
 docker-compose.kafka.yml         # Kafka 인프라 (Zookeeper, Kafka, NiFi, Spark)
 docs/kafka-pipeline.md           # 이 문서
-requirements.txt                 # kafka-python, faust-streaming 추가됨
+requirements.txt                 # kafka-python, faust-streaming, boto3 추가됨
+.env.example                     # ECOS_API_KEY, AWS_*, DELTA_BASE_PATH
 ```

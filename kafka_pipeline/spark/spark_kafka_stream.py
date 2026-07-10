@@ -8,18 +8,18 @@ Kafka stock.raw.prices 토픽을 실시간으로 소비하여:
 
 실행 방법:
     # 로컬 Spark (spark-submit 없이)
-    python -m kafka.spark.spark_kafka_stream
+    python -m kafka_pipeline.spark.spark_kafka_stream
 
     # spark-submit 사용
     spark-submit \\
         --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \\
-        kafka/spark/spark_kafka_stream.py
+        kafka_pipeline/spark/spark_kafka_stream.py
 
     # Docker Spark 클러스터
     docker exec spark-master spark-submit \\
         --master spark://spark-master:7077 \\
         --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \\
-        /opt/bitnami/spark/work/kafka/spark/spark_kafka_stream.py
+        /opt/bitnami/spark/work/kafka_pipeline/spark/spark_kafka_stream.py
 
 환경 변수:
     KAFKA_BOOTSTRAP_SERVERS : Kafka 브로커 주소 (기본: localhost:9092)

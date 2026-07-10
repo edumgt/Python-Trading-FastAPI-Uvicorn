@@ -9,8 +9,8 @@ version: '3.9'
 #   - Kafka UI         (웹 관리 콘솔 — http://localhost:8989)
 #   - NiFi             (ETL 데이터 플로우 — http://localhost:8443/nifi)
 #
-# Spark는 별도 실행: kafka/spark/spark_kafka_stream.py 참고
-#   pip install pyspark  →  python -m kafka.spark.spark_kafka_stream
+# Spark는 별도 실행: kafka_pipeline/spark/spark_kafka_stream.py 참고
+#   pip install pyspark  →  python -m kafka_pipeline.spark.spark_kafka_stream
 #
 # 실행:
 #   docker compose -f docker-compose.kafka.yml up -d
@@ -230,6 +230,12 @@ services:
         --partitions 3 \
         --replication-factor 1 \
         --config retention.ms=604800000
+
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists \
+        --topic public.ecos.macro \
+        --partitions 1 \
+        --replication-factor 1 \
+        --config retention.ms=2592000000
 
       echo '토픽 초기화 완료!'
       kafka-topics --bootstrap-server kafka:29092 --list

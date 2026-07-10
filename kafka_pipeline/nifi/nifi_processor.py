@@ -20,8 +20,8 @@ NiFi 데이터 흐름 구조 (개념):
   [success / failure 라우팅]
 
 Usage (단독 실행):
-    python -m kafka.nifi.nifi_processor --source daum --market KOSPI
-    python -m kafka.nifi.nifi_processor --simulate-nifi-flow
+    python -m kafka_pipeline.nifi.nifi_processor --source daum --market KOSPI
+    python -m kafka_pipeline.nifi.nifi_processor --simulate-nifi-flow
 """
 
 from __future__ import annotations
@@ -185,7 +185,7 @@ class PublishKafkaProcessor:
 
     def _get_producer(self):
         if self._producer is None:
-            from kafka.producer.stock_producer import build_producer
+            from kafka_pipeline.producer.stock_producer import build_producer
             self._producer = build_producer()
         return self._producer
 
@@ -194,7 +194,7 @@ class PublishKafkaProcessor:
         topic = flow_file.get_attribute("destination.topic", "stock.raw.prices")
         key   = flow_file.get_attribute("stock.symbol", "UNKNOWN")
         try:
-            from kafka.utils.schema import StockPriceEvent
+            from kafka_pipeline.utils.schema import StockPriceEvent
             data = json.loads(flow_file.content)
             source = flow_file.get_attribute("source", "daum")
             if source == "daum":

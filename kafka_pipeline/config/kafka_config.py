@@ -17,6 +17,7 @@ class Topics:
     FILTERED        = "stock.filtered.significant"  # 변동률 필터 통과 종목
     ALERTS          = "stock.alerts.high-volume"  # 거래량 급증 알림
     AGGREGATED      = "stock.aggregated.ohlcv"    # 1분봉 OHLCV 집계
+    PUBLIC_MACRO    = "public.ecos.macro"         # 한국은행 ECOS 공공데이터(거시지표)
 
 # ──────────────────────────────────────────────────────
 # 파티션 설계 (파티션 키: 종목 심볼)
@@ -26,12 +27,14 @@ class Topics:
 #   - filtered  : 3 → ML 파이프라인 병렬도에 맞춤
 #   - alerts    : 2 → 알림은 낮은 처리량, 순서 보장 우선
 #   - aggregated: 3 → Spark/Flink 병렬 집계 단위
+#   - public_macro: 1 → 통계 코드 수가 적고 저빈도(일/월) 수집
 # ──────────────────────────────────────────────────────
 PARTITION_CONFIG: dict[str, int] = {
-    Topics.RAW_PRICES : 6,
-    Topics.FILTERED   : 3,
-    Topics.ALERTS     : 2,
-    Topics.AGGREGATED : 3,
+    Topics.RAW_PRICES   : 6,
+    Topics.FILTERED     : 3,
+    Topics.ALERTS       : 2,
+    Topics.AGGREGATED   : 3,
+    Topics.PUBLIC_MACRO : 1,
 }
 
 # ──────────────────────────────────────────────────────
@@ -54,6 +57,7 @@ class ConsumerGroups:
     ALERT_SERVICE = "stock-alert-service"    # 알림 서비스
     DB_SINK       = "stock-db-sink"          # MongoDB/SQLite 저장
     SPARK_STREAM  = "stock-spark-stream"     # Spark Structured Streaming
+    DELTA_SINK    = "public-data-delta-sink" # Spark → Delta Lake(S3) 적재
 
 # ──────────────────────────────────────────────────────
 # Producer 기본값

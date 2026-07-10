@@ -9,8 +9,8 @@ stock.alerts.high-volume 토픽을 구독하여
   → 동일 토픽을 서로 다른 그룹이 각자 소비 (Pub-Sub 패턴)
 
 Usage:
-    python -m kafka.consumer.alert_consumer
-    python -m kafka.consumer.alert_consumer --severity WARNING
+    python -m kafka_pipeline.consumer.alert_consumer
+    python -m kafka_pipeline.consumer.alert_consumer --severity WARNING
 """
 
 from __future__ import annotations
@@ -23,13 +23,13 @@ from typing import Optional
 from kafka import KafkaConsumer
 from kafka.errors import NoBrokersAvailable
 
-from kafka.config.kafka_config import (
+from kafka_pipeline.config.kafka_config import (
     BOOTSTRAP_SERVERS,
     CONSUMER_CONFIG,
     ConsumerGroups,
     Topics,
 )
-from kafka.utils.schema import StockAlertEvent
+from kafka_pipeline.utils.schema import StockAlertEvent
 
 logger = logging.getLogger(__name__)
 

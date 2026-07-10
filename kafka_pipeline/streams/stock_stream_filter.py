@@ -13,9 +13,9 @@ Java Kafka Streams와 동일한 이벤트-드리븐 스트림 처리 모델을 �
        └─[Tumbling Window 1min] OHLCV ───→ stock.aggregated.ohlcv
 
 실행 방법:
-    faust -A kafka.streams.stock_stream_filter worker -l info
+    faust -A kafka_pipeline.streams.stock_stream_filter worker -l info
     # 또는
-    python -m kafka.streams.stock_stream_filter worker -l info
+    python -m kafka_pipeline.streams.stock_stream_filter worker -l info
 """
 
 from __future__ import annotations
@@ -26,12 +26,12 @@ from datetime import datetime, timezone
 
 import faust
 
-from kafka.config.kafka_config import (
+from kafka_pipeline.config.kafka_config import (
     BOOTSTRAP_SERVERS,
     StreamThresholds,
     Topics,
 )
-from kafka.utils.schema import (
+from kafka_pipeline.utils.schema import (
     FilteredStockEvent,
     OHLCVAggregation,
     StockAlertEvent,

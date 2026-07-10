@@ -11,9 +11,9 @@ stock.raw.prices 토픽을 구독하여:
   → 컨슈머 추가/제거 시 리밸런싱 발생
 
 Usage:
-    python -m kafka.consumer.stock_consumer
-    python -m kafka.consumer.stock_consumer --dry-run   # DB 저장 없이 로그만
-    python -m kafka.consumer.stock_consumer --from-beginning
+    python -m kafka_pipeline.consumer.stock_consumer
+    python -m kafka_pipeline.consumer.stock_consumer --dry-run   # DB 저장 없이 로그만
+    python -m kafka_pipeline.consumer.stock_consumer --from-beginning
 """
 
 from __future__ import annotations
@@ -26,13 +26,13 @@ from datetime import datetime, timezone
 from kafka import KafkaConsumer, TopicPartition
 from kafka.errors import NoBrokersAvailable
 
-from kafka.config.kafka_config import (
+from kafka_pipeline.config.kafka_config import (
     BOOTSTRAP_SERVERS,
     CONSUMER_CONFIG,
     ConsumerGroups,
     Topics,
 )
-from kafka.utils.schema import StockPriceEvent
+from kafka_pipeline.utils.schema import StockPriceEvent
 
 logger = logging.getLogger(__name__)
 

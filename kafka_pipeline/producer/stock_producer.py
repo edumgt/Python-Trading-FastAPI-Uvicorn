@@ -13,10 +13,10 @@
 
 Usage:
     # 단발성 수집
-    python -m kafka.producer.stock_producer --source daum --market KOSPI --once
+    python -m kafka_pipeline.producer.stock_producer --source daum --market KOSPI --once
 
     # 주기적 수집 (30초마다)
-    python -m kafka.producer.stock_producer --source yfinance --symbols AAPL TSLA MSFT --interval 30
+    python -m kafka_pipeline.producer.stock_producer --source yfinance --symbols AAPL TSLA MSFT --interval 30
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ from typing import Callable, Iterator
 from kafka import KafkaProducer
 from kafka.errors import KafkaError, NoBrokersAvailable
 
-from kafka.config.kafka_config import BOOTSTRAP_SERVERS, PRODUCER_CONFIG, Topics
-from kafka.utils.schema import StockPriceEvent
+from kafka_pipeline.config.kafka_config import BOOTSTRAP_SERVERS, PRODUCER_CONFIG, Topics
+from kafka_pipeline.utils.schema import StockPriceEvent
 
 logger = logging.getLogger(__name__)
 

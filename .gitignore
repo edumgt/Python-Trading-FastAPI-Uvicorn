@@ -20,6 +20,7 @@ build/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # IDE / Editor
 .vscode/
@@ -45,5 +46,9 @@ htmlcov/
 # Kubernetes Secrets (실제 시크릿 파일은 버전 관리 제외)
 k8s/mongodb/secret.yaml
 k8s/**/secret.yaml
+
+# Delta Lake 로컬 테이블 / Spark 체크포인트
+data/delta/
+spark-warehouse/
 
 .claude/
