@@ -337,6 +337,22 @@ Flask API 엔드포인트:
 - `POST /api/webapp/dl-predict`
 - `POST /api/webapp/stock-forecast`
 
+## GCP Vertex AI MLOps 확장
+
+현재 `/api/webapp/ml-predict`, `/dl-predict`는 요청 안에서 로컬 모델을 학습하는 실험용 경로입니다. 운영 환경에서는 학습과 예측을 분리해 **Cloud Storage → Vertex AI CustomJob → Model Registry → Endpoint → Flask Backend API** 흐름을 권장합니다.
+
+- 상세 설계·권한·피처 계약·CustomJob·Model Registry alias·Canary/롤백·Flask API 계약: [Vertex AI 운영 가이드](docs/vertex-ai-workflow.md)
+- 운영 예측 API 권장 경로: `POST /api/webapp/vertex-predict` (구현 시 Flask가 Vertex Endpoint를 서버 측에서 호출)
+- 기존 로컬/Docker와 Vertex AI의 기술·비용·보안·확장성 비교는 위 가이드의 **로컬 PC와 Vertex AI 비교** 표를 참고하세요.
+
+## AWS SageMaker AI MLOps 확장
+
+기존 Canvas 빠른 시작 외에, 코드 기반의 운영 워크플로우는 **S3 → SageMaker Training → Model Registry(Model Package Group) → Real-time Endpoint → Flask Backend API**로 구성합니다.
+
+- 상세 설계·S3 데이터 계약·Training Job·Model Registry approval·Canary/rollback·Flask API 계약: [SageMaker AI 운영 가이드](docs/sagemaker-workflow.md)
+- 운영 예측 API 권장 경로: `POST /api/webapp/sagemaker-predict` (구현 시 Flask가 IAM role로 SageMaker Endpoint를 서버 측에서 호출)
+- Canvas를 이용한 no-code 빠른 시작은 [기존 SageMaker Canvas 가이드](sagemaker/README.md)를 참고하세요.
+
 ---
 
 ## 크롤러 엔진은 https://github.com/edumgt/python-crawling-lab 의 크롤러 방식을 도입합니다.
