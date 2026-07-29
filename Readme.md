@@ -353,6 +353,144 @@ Flask API 엔드포인트:
 - 운영 예측 API 권장 경로: `POST /api/webapp/sagemaker-predict` (구현 시 Flask가 IAM role로 SageMaker Endpoint를 서버 측에서 호출)
 - Canvas를 이용한 no-code 빠른 시작은 [기존 SageMaker Canvas 가이드](sagemaker/README.md)를 참고하세요.
 
+### 이 저장소에 권장하는 AWS AI 리소스
+
+이 프로젝트는 시세 시계열의 `BUY` / `SELL` / `HOLD` 분류 모델을 학습·제공하는 워크로드입니다. 따라서 생성형 AI용 **Amazon Bedrock**보다, 사용자 정의 scikit-learn/XGBoost/LSTM 학습과 모델 서빙을 제공하는 **Amazon SageMaker AI**가 핵심 서비스입니다. Bedrock은 향후 분석 결과를 자연어로 요약하는 기능을 추가할 때만 선택적으로 사용합니다.
+
+| 목적 | AWS 리소스 | 이 저장소의 연결 지점 | 운영 시점 |
+|---|---|---|---|
+| 원천·정제 데이터와 모델 artifact 보관 | Amazon S3 | OHLCV, `FeatureBuilder` 결과, train/validation 분할, `model.tar.gz` | 필수 |
+| 재현 가능한 ML/DL 학습 | SageMaker AI Training Job | `trading/ml_strategy.py`, `trading/dl_strategy.py`의 피처·학습 코드를 학습 컨테이너로 분리 | 필수 |
+| 실험 비교 | SageMaker Experiments | 데이터 버전, Git SHA, macro F1, 하이퍼파라미터 기록 | 권장 |
+| 모델 버전·승인 관리 | SageMaker Model Registry | `PendingManualApproval → Approved → Deprecated` 모델 승격 | 필수 |
+| 실시간 예측 | SageMaker AI real-time endpoint | Flask가 서버 측에서 `InvokeEndpoint` 호출 | 실시간 화면/API 필요 시 |
+| 대량 일괄 예측 | SageMaker Batch Transform | 장 마감 후 전체 종목 신호 생성 | 일일 배치에 권장 |
+| 학습/서빙 컨테이너 보관 | Amazon ECR | 웹앱 Docker 이미지와 분리한 trainer/serving 이미지 | 커스텀 코드 운영 시 |
+| 로그·지표·알림 | Amazon CloudWatch + S3 Data Capture | endpoint 지연·오류·호출량, 추론 요청/응답 보관 | 권장 |
+| 권한 | IAM role | SageMaker 실행 역할, Flask/ECS/EKS 실행 역할 | 필수 |
+| 스케줄 연결 | Airflow 또는 EventBridge Scheduler | 현재 Airflow DAG에서 학습/Batch Transform 시작 | 선택 |
+
+브라우저가 AWS를 직접 호출하지 않도록 합니다. Django/Flask 컨테이너에 연결한 IAM role만 특정 endpoint의 `sagemaker:InvokeEndpoint` 권한을 갖게 하고, Flask가 입력 검증·피처 생성·결과 기록을 담당합니다. 액세스 키를 이미지, Git, `.env`에 저장하지 마세요.
+
+### AWS CLI 빠른 시작 — 코드 기반 MLOps
+
+아래 명령은 서울 리전(`ap-northeast-2`) 예시입니다. 실행 전 AWS CLI v2와 AWS IAM Identity Center(SSO) 또는 임시 자격증명을 설정하고, `aws sts get-caller-identity`가 성공하는지 확인하세요. 실제 생성·과금이 발생하는 명령이므로 개발 계정에서 먼저 실행합니다.
+
+```bash
+# 0) 공통 변수와 자격증명 확인
+export AWS_REGION=ap-northeast-2
+export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+export BUCKET="stock-ml-${AWS_ACCOUNT_ID}-${AWS_REGION}"
+export SAGEMAKER_EXEC_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:role/SageMakerStockExecutionRole"
+
+aws sts get-caller-identity
+aws s3api create-bucket \
+  --bucket "$BUCKET" \
+  --region "$AWS_REGION" \
+  --create-bucket-configuration "LocationConstraint=$AWS_REGION"
+aws s3api put-public-access-block --bucket "$BUCKET" \
+  --public-access-block-configuration \
+  'BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true'
+aws s3api put-bucket-versioning --bucket "$BUCKET" \
+  --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket "$BUCKET" \
+  --server-side-encryption-configuration \
+  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+```
+
+`SageMakerStockExecutionRole`에는 최소한 curated 데이터의 `s3:GetObject`, artifact prefix의 `s3:PutObject`, ECR image pull, CloudWatch Logs 권한을 부여합니다. API 컨테이너의 런타임 role은 production endpoint ARN에 한정한 `sagemaker:InvokeEndpoint`만 부여합니다. 첫 실행 전에는 조직의 IAM 관리자와 bucket/ECR ARN 범위를 확정하세요.
+
+아래의 `data/train.parquet`, `data/validation.parquet`, trainer/serving Dockerfile은 아직 이 저장소에서 운영용으로 분리해야 하는 예시 경로입니다. 먼저 [SageMaker AI 운영 가이드](docs/sagemaker-workflow.md)의 피처 계약을 따라 `FeatureBuilder.feature_columns`, schema hash, metric, Git SHA를 `metadata.json`에 기록하는 trainer를 준비한 뒤 실행하세요.
+
+```bash
+# 1) 이 저장소에서 만든 학습/검증 파일을 날짜 버전으로 업로드
+#    (학습 파일은 시간 순서로 split하고, 피처 목록·순서를 metadata에 함께 고정)
+export DATASET_VERSION=20260730
+aws s3 cp data/train.parquet \
+  "s3://${BUCKET}/curated/dataset_version=${DATASET_VERSION}/train.parquet"
+aws s3 cp data/validation.parquet \
+  "s3://${BUCKET}/curated/dataset_version=${DATASET_VERSION}/validation.parquet"
+
+# 2) trainer/serving 전용 ECR 저장소 생성 (이미 있으면 오류를 무시)
+aws ecr create-repository --repository-name stock-ml-trainer --region "$AWS_REGION" || true
+aws ecr create-repository --repository-name stock-ml-serving --region "$AWS_REGION" || true
+
+# 3) 커스텀 training image를 전제로 Training Job 제출
+#    image는 /opt/ml/input/data/{train,validation}를 읽고 /opt/ml/model에
+#    model.joblib와 metadata.json을 기록해야 합니다.
+export TRAINING_JOB_NAME="stock-direction-${DATASET_VERSION}-$(date +%H%M%S)"
+export TRAINING_IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/stock-ml-trainer:latest"
+aws sagemaker create-training-job \
+  --training-job-name "$TRAINING_JOB_NAME" \
+  --role-arn "$SAGEMAKER_EXEC_ROLE_ARN" \
+  --algorithm-specification "TrainingImage=$TRAINING_IMAGE,TrainingInputMode=File" \
+  --input-data-config "[\
+    {\"ChannelName\":\"train\",\"DataSource\":{\"S3DataSource\":{\"S3DataType\":\"S3Prefix\",\"S3Uri\":\"s3://${BUCKET}/curated/dataset_version=${DATASET_VERSION}/train.parquet\",\"S3DataDistributionType\":\"FullyReplicated\"}}},\
+    {\"ChannelName\":\"validation\",\"DataSource\":{\"S3DataSource\":{\"S3DataType\":\"S3Prefix\",\"S3Uri\":\"s3://${BUCKET}/curated/dataset_version=${DATASET_VERSION}/validation.parquet\",\"S3DataDistributionType\":\"FullyReplicated\"}}}\
+  ]" \
+  --output-data-config "S3OutputPath=s3://${BUCKET}/training/output" \
+  --resource-config "InstanceType=ml.m5.xlarge,InstanceCount=1,VolumeSizeInGB=30" \
+  --stopping-condition MaxRuntimeInSeconds=3600
+aws sagemaker wait training-job-completed-or-stopped --training-job-name "$TRAINING_JOB_NAME"
+aws sagemaker describe-training-job --training-job-name "$TRAINING_JOB_NAME" \
+  --query '{Status:TrainingJobStatus,Artifact:ModelArtifacts.S3ModelArtifacts}' --output table
+```
+
+```bash
+# 4) 모델 그룹 생성 후 학습 artifact를 후보 모델로 등록
+export MODEL_GROUP=stock-direction-classifier
+export MODEL_DATA_URL="$(aws sagemaker describe-training-job --training-job-name "$TRAINING_JOB_NAME" \
+  --query ModelArtifacts.S3ModelArtifacts --output text)"
+export SERVING_IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/stock-ml-serving:latest"
+
+aws sagemaker create-model-package-group \
+  --model-package-group-name "$MODEL_GROUP" \
+  --model-package-group-description 'Korean stock BUY/SELL/HOLD classifier' || true
+aws sagemaker create-model-package \
+  --model-package-group-name "$MODEL_GROUP" \
+  --model-approval-status PendingManualApproval \
+  --inference-specification "{\"Containers\":[{\"Image\":\"${SERVING_IMAGE}\",\"ModelDataUrl\":\"${MODEL_DATA_URL}\"}],\"SupportedContentTypes\":[\"application/json\"],\"SupportedResponseMIMETypes\":[\"application/json\"]}"
+
+# 검증을 통과한 package ARN만 Approved로 승격합니다.
+aws sagemaker list-model-packages --model-package-group-name "$MODEL_GROUP" \
+  --sort-by CreationTime --sort-order Descending --max-results 5
+```
+
+배포는 staging endpoint에서 계약 테스트를 한 뒤 production으로 승격합니다. `model.joblib`/`metadata.json`을 읽어 `{"instances":[...]}`를 처리하는 serving image를 사용한다는 전제의 최소 CLI 예시는 다음과 같습니다.
+
+```bash
+# 5) 승인된 artifact를 staging real-time endpoint로 배포
+export MODEL_NAME=stock-direction-staging-model
+export ENDPOINT_CONFIG=stock-direction-staging-config
+export ENDPOINT_NAME=stock-direction-staging
+
+aws sagemaker create-model --model-name "$MODEL_NAME" \
+  --execution-role-arn "$SAGEMAKER_EXEC_ROLE_ARN" \
+  --primary-container "Image=$SERVING_IMAGE,ModelDataUrl=$MODEL_DATA_URL"
+aws sagemaker create-endpoint-config --endpoint-config-name "$ENDPOINT_CONFIG" \
+  --production-variants "VariantName=blue,ModelName=$MODEL_NAME,InitialInstanceCount=1,InstanceType=ml.m5.large,InitialVariantWeight=1"
+aws sagemaker create-endpoint --endpoint-name "$ENDPOINT_NAME" \
+  --endpoint-config-name "$ENDPOINT_CONFIG"
+aws sagemaker wait endpoint-in-service --endpoint-name "$ENDPOINT_NAME"
+
+# 6) CLI 추론 호출: JSON 파일에는 metadata.json과 동일한 피처 이름·순서를 사용
+printf '%s' '{"instances":[{"Returns":0.01,"MA5_Ratio":1.0}]}' > /tmp/stock-request.json
+aws sagemaker-runtime invoke-endpoint --endpoint-name "$ENDPOINT_NAME" \
+  --content-type application/json --accept application/json \
+  --body fileb:///tmp/stock-request.json /tmp/stock-response.json
+cat /tmp/stock-response.json
+
+# 7) 테스트가 끝나면 endpoint부터 삭제하여 시간 과금을 중단
+aws sagemaker delete-endpoint --endpoint-name "$ENDPOINT_NAME"
+aws sagemaker wait endpoint-deleted --endpoint-name "$ENDPOINT_NAME"
+aws sagemaker delete-endpoint-config --endpoint-config-name "$ENDPOINT_CONFIG"
+aws sagemaker delete-model --model-name "$MODEL_NAME"
+```
+
+실제 production에서는 `create-model`의 artifact/image 대신 **Approved Model Registry package version**을 배포 기준으로 기록하고, 기존/new variant의 traffic weight를 90/10으로 시작해 CloudWatch 오류율·지연시간·사후 성능을 확인합니다. 상시 endpoint는 호출이 없어도 비용이 발생하므로, 장 마감 일괄 신호는 Batch Transform, 실시간 화면만 endpoint를 사용하세요. Canvas가 필요한 분석가용 no-code 경로와 endpoint 정리 스크립트는 아래의 Canvas 섹션을 사용하면 됩니다.
+
+AWS CLI 옵션과 서비스 동작은 [SageMaker AI CLI 명령 참조](https://docs.aws.amazon.com/cli/latest/reference/sagemaker/), [Model Registry 모델 버전 관리](https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-models.html), [S3 기본 암호화](https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html)를 기준으로 확인하세요. 인스턴스·endpoint·Canvas 가격은 리전과 시점에 따라 달라지므로 배포 직전에 AWS Pricing 페이지에서 재확인합니다.
+
 ---
 
 ## 크롤러 엔진은 https://github.com/edumgt/python-crawling-lab 의 크롤러 방식을 도입합니다.
